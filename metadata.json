@@ -1,0 +1,6 @@
+{
+  "name": "RentFlow - Equipment Rental Management SaaS",
+  "description": "Multi-tenant B2B Equipment Rental Management SaaS with inventory, availability engine, customer CRM, inspections, invoices, storefront, and Gemini AI operations assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
