@@ -12,14 +12,17 @@ import {
   Bell,
 } from 'lucide-react';
 import { useRentFlow } from '../context/RentFlowContext';
+import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 
 interface HeaderProps {
   onOpenNewBooking: () => void;
   onOpenAiCopilot: () => void;
+  onOpenAuth?: (mode?: 'LOGIN' | 'PROFILE') => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilot }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilot, onOpenAuth }) => {
+  const { user } = useAuth();
   const {
     currentOrg,
     organizations,
@@ -182,6 +185,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilo
               <span className="hidden md:inline">Marketing Site</span>
             </>
           )}
+        </button>
+
+        {/* User Account / Profile Button */}
+        <button
+          type="button"
+          onClick={() => onOpenAuth?.(user ? 'PROFILE' : 'LOGIN')}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+          title={user ? `Signed in as ${user.email}` : 'Sign in to RentFlow'}
+        >
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold">
+            {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <span className="hidden sm:inline max-w-[100px] truncate text-slate-700 font-semibold">
+            {user ? (user.displayName || user.email?.split('@')[0]) : 'Sign In'}
+          </span>
         </button>
 
         {/* Reset Demo Button */}

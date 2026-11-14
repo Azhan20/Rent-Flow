@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { RentFlowProvider, useRentFlow } from './context/RentFlowContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -19,15 +20,26 @@ import { ThreeEquipmentViewer } from './components/ThreeEquipmentViewer';
 import { NewBookingModal } from './components/NewBookingModal';
 import { AiCopilotDrawer } from './components/AiCopilotDrawer';
 import { CsvImportModal } from './components/CsvImportModal';
+import { AuthModal } from './components/AuthModal';
+import { CheckoutModal } from './components/CheckoutModal';
 import { Menu } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
   const { activeView, setActiveView } = useRentFlow();
+  const { user, pendingPlan, setPendingPlan } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newBookingModalOpen, setNewBookingModalOpen] = useState(false);
   const [preSelectedEqId, setPreSelectedEqId] = useState<string | undefined>();
   const [aiCopilotOpen, setAiCopilotOpen] = useState(false);
   const [csvImportModalOpen, setCsvImportModalOpen] = useState(false);
+
+  // Auth and subscription checkout states
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'REGISTER' | 'FORGOT' | 'PROFILE'>('LOGIN');
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutPlanName, setCheckoutPlanName] = useState('Growth Fleet');
+  const [checkoutBillingCycle, setCheckoutBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
   const [inspectionTarget, setInspectionTarget] = useState<{
     bookingId?: string;
     type?: 'CHECKOUT' | 'RETURN';
@@ -56,7 +68,39 @@ const MainLayout: React.FC = () => {
   if (activeView === 'website') {
     return (
       <div className="min-h-screen bg-white">
-        <PublicWebsiteView />
+        <PublicWebsiteView
+          onOpenAuthModal={(mode) => {
+            setAuthModalMode(mode);
+            setAuthModalOpen(true);
+          }}
+          onOpenCheckoutModal={(plan, cycle) => {
+            setCheckoutPlanName(plan);
+            setCheckoutBillingCycle(cycle);
+            setCheckoutModalOpen(true);
+          }}
+        />
+
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode={authModalMode}
+          onAuthSuccess={() => {
+            if (pendingPlan) {
+              setCheckoutPlanName(pendingPlan);
+              setCheckoutModalOpen(true);
+            }
+          }}
+        />
+
+        <CheckoutModal
+          isOpen={checkoutModalOpen}
+          onClose={() => setCheckoutModalOpen(false)}
+          planName={checkoutPlanName}
+          billingCycle={checkoutBillingCycle}
+          onSubscriptionSuccess={() => {
+            setActiveView('dashboard');
+          }}
+        />
       </div>
     );
   }
@@ -86,6 +130,10 @@ const MainLayout: React.FC = () => {
               setNewBookingModalOpen(true);
             }}
             onOpenAiCopilot={() => setAiCopilotOpen(true)}
+            onOpenAuth={(mode) => {
+              setAuthModalMode(mode || 'LOGIN');
+              setAuthModalOpen(true);
+            }}
           />
         </div>
 
@@ -168,14 +216,38 @@ const MainLayout: React.FC = () => {
         isOpen={csvImportModalOpen}
         onClose={() => setCsvImportModalOpen(false)}
       />
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authModalMode}
+        onAuthSuccess={() => {
+          if (pendingPlan) {
+            setCheckoutPlanName(pendingPlan);
+            setCheckoutModalOpen(true);
+          }
+        }}
+      />
+
+      <CheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        planName={checkoutPlanName}
+        billingCycle={checkoutBillingCycle}
+        onSubscriptionSuccess={() => {
+          setActiveView('dashboard');
+        }}
+      />
     </div>
   );
 };
 
 export default function App() {
   return (
-    <RentFlowProvider>
-      <MainLayout />
-    </RentFlowProvider>
+    <AuthProvider>
+      <RentFlowProvider>
+        <MainLayout />
+      </RentFlowProvider>
+    </AuthProvider>
   );
 }

@@ -21,11 +21,34 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useRentFlow } from '../context/RentFlowContext';
+import { useAuth } from '../context/AuthContext';
 
-export const PublicWebsiteView: React.FC = () => {
+interface PublicWebsiteViewProps {
+  onOpenAuthModal?: (mode: 'LOGIN' | 'REGISTER' | 'PROFILE') => void;
+  onOpenCheckoutModal?: (planName: string, billingCycle: 'monthly' | 'yearly') => void;
+}
+
+export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
+  onOpenAuthModal,
+  onOpenCheckoutModal,
+}) => {
   const { setActiveView } = useRentFlow();
+  const { user, setPendingPlan } = useAuth();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [activeIndustry, setActiveIndustry] = useState<string>('construction');
+
+  const handleSelectPlan = (planName: string) => {
+    if (!user) {
+      setPendingPlan(planName);
+      if (onOpenAuthModal) {
+        onOpenAuthModal('REGISTER');
+      }
+    } else {
+      if (onOpenCheckoutModal) {
+        onOpenCheckoutModal(planName, billingCycle);
+      }
+    }
+  };
 
   const industries = [
     {
@@ -141,14 +164,36 @@ export const PublicWebsiteView: React.FC = () => {
           <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
           <span>Next-Gen Equipment Rental Software for Modern Plant & Tool Hire</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-slate-400">SOC-Ready Architecture</span>
+        <div className="flex items-center gap-3">
+          <span className="hidden md:inline text-slate-400">SOC-Ready Multi-Tenant</span>
+          {user ? (
+            <button
+              type="button"
+              onClick={() => onOpenAuthModal?.('PROFILE')}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-200 hover:bg-slate-800 transition-colors"
+              title="View account profile"
+            >
+              <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="max-w-[110px] truncate text-[11px] font-medium">{user.displayName || user.email}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onOpenAuthModal?.('LOGIN')}
+              className="text-slate-300 hover:text-white font-medium text-xs transition-colors px-2 py-1 rounded-md hover:bg-slate-800"
+            >
+              Sign In
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveView('dashboard')}
-            className="text-white font-semibold hover:text-blue-400 transition-colors"
+            className="text-white font-semibold hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
           >
-            Go to App Dashboard →
+            <span>App Dashboard</span>
+            <ArrowRight className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -397,7 +442,7 @@ export const PublicWebsiteView: React.FC = () => {
                 <div className="pt-6">
                   <button
                     type="button"
-                    onClick={() => setActiveView('dashboard')}
+                    onClick={() => handleSelectPlan(plan.name)}
                     className={`w-full rounded-xl py-2.5 text-xs font-bold transition-all ${
                       plan.popular
                         ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'

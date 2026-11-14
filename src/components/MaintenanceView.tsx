@@ -24,6 +24,18 @@ import {
   PredictiveMaintenanceAlert, 
   AlertSeverity 
 } from '../utils/predictiveMaintenance';
+import { calculateSixMonthMaintenanceForecast } from '../utils/maintenanceProjection';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 export const MaintenanceView: React.FC = () => {
   const { maintenanceOrders, equipmentList, bookings, createMaintenanceOrder, updateMaintenanceStatus } = useRentFlow();
@@ -45,6 +57,13 @@ export const MaintenanceView: React.FC = () => {
   const predictiveSummary = useMemo(() => {
     return generatePredictiveAlerts(equipmentList, maintenanceOrders, bookings);
   }, [equipmentList, maintenanceOrders, bookings]);
+
+  // Compute 6-Month maintenance & downtime projection
+  const sixMonthForecast = useMemo(() => {
+    return calculateSixMonthMaintenanceForecast(equipmentList, maintenanceOrders, bookings);
+  }, [equipmentList, maintenanceOrders, bookings]);
+
+  const [forecastViewMode, setForecastViewMode] = useState<'DOWNTIME' | 'BUDGET'>('DOWNTIME');
 
   // Collect all serialized units for work order dropdown
   const allSerializedUnits: {
@@ -431,6 +450,191 @@ export const MaintenanceView: React.FC = () => {
               <p className="text-[11px] text-slate-500 mt-0.5">No units currently require immediate service interventions.</p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 6-Month Projected Fleet Service Intervals & Downtime Planning (Recharts) */}
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </span>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                6-Month Projected Service Intervals & Downtime Forecast
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Operations downtime planner projecting machine maintenance intervals, shop hours, and servicing expenses.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setForecastViewMode('DOWNTIME')}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  forecastViewMode === 'DOWNTIME'
+                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Services & Shop Hours
+              </button>
+              <button
+                type="button"
+                onClick={() => setForecastViewMode('BUDGET')}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  forecastViewMode === 'BUDGET'
+                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Projected Budget ($)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Operations Planning Metric Pills */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">6-Mo Projected Services</span>
+            <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{sixMonthForecast.totalProjectedServices} Units</p>
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-400">Scheduled milestone intervals</span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Planned Shop Downtime</span>
+            <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-0.5">{sixMonthForecast.totalPlannedDowntimeHours} Hours</p>
+            <span className="text-[10px] text-slate-500">Bay occupancy required</span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Peak Downtime Month</span>
+            <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-0.5">{sixMonthForecast.peakMonthLabel}</p>
+            <span className="text-[10px] text-slate-500">Highest fleet shop demand</span>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Estimated Budget</span>
+            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+              ${sixMonthForecast.totalEstimatedCost.toLocaleString()}
+            </p>
+            <span className="text-[10px] text-slate-500">Rec. Shop Techs: {sixMonthForecast.recommendedShopTechFTE} FTE</span>
+          </div>
+        </div>
+
+        {/* Visual Trend Chart */}
+        <div className="h-72 w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            {forecastViewMode === 'DOWNTIME' ? (
+              <AreaChart data={sixMonthForecast.months} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorServices" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0}/>
+                  </linearGradient>
+                  <linearGradient id="colorDowntime" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 11 }} label={{ value: 'Service Units', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10, fill: '#6366f1' } }} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} label={{ value: 'Downtime (Hours)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fontSize: 10, fill: '#f59e0b' } }} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload as typeof sixMonthForecast.months[0];
+                      return (
+                        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl text-xs space-y-1.5 border border-slate-700">
+                          <p className="font-bold text-sm text-indigo-300">{label}</p>
+                          <div className="space-y-1 text-[11px]">
+                            <p className="flex justify-between gap-4">
+                              <span className="text-slate-400">Projected Services:</span>
+                              <span className="font-semibold text-white">{data.projectedServices} machines</span>
+                            </p>
+                            <p className="flex justify-between gap-4">
+                              <span className="text-slate-400">Planned Shop Downtime:</span>
+                              <span className="font-semibold text-amber-400">{data.plannedDowntimeHours} hours</span>
+                            </p>
+                            <p className="flex justify-between gap-4">
+                              <span className="text-slate-400">Est. Parts & Labor:</span>
+                              <span className="font-semibold text-emerald-400">${data.estimatedCost.toLocaleString()}</span>
+                            </p>
+                            {data.affectedEquipmentNames.length > 0 && (
+                              <div className="pt-1 border-t border-slate-700 text-[10px] text-slate-300">
+                                <span className="text-slate-400 block font-medium">Entering Shop:</span>
+                                <span>{data.affectedEquipmentNames.slice(0, 3).join(', ')}{data.affectedEquipmentNames.length > 3 ? ` +${data.affectedEquipmentNames.length - 3} more` : ''}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="projectedServices"
+                  name="Projected Machine Services (Units)"
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorServices)"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="plannedDowntimeHours"
+                  name="Planned Shop Downtime (Hours)"
+                  stroke="#f59e0b"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: '#f59e0b' }}
+                />
+              </AreaChart>
+            ) : (
+              <AreaChart data={sixMonthForecast.months} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(val) => `$${val}`} />
+                <Tooltip
+                  formatter={(val: any) => [`$${Number(val).toLocaleString()}`, 'Estimated Maintenance Budget']}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Area
+                  type="monotone"
+                  dataKey="estimatedCost"
+                  name="Projected Maintenance Budget ($)"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorCost)"
+                />
+              </AreaChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+
+        {/* Proactive Shop Planning Note */}
+        <div className="flex items-center gap-2.5 bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl p-3 text-xs text-blue-900 dark:text-blue-200">
+          <Activity className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+          <p className="text-[11px] leading-relaxed">
+            <span className="font-bold">Operations Dispatch Recommendation:</span> Peak shop downtime is projected in <span className="font-semibold underline decoration-blue-400">{sixMonthForecast.peakMonthLabel}</span>. Pre-order fast-moving OEM filter kits (hydraulic, fuel, and engine oil) and schedule shop services during mid-week customer turnaround windows to maintain &ge;92% fleet availability.
+          </p>
         </div>
       </div>
 
