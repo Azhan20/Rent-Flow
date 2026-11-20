@@ -1,4 +1,4 @@
-export type UserRole = 'SUPER_ADMIN' | 'ORG_OWNER' | 'MANAGER' | 'STAFF' | 'CUSTOMER';
+export type UserRole = 'ORG_OWNER' | 'MANAGER' | 'STAFF' | 'CUSTOMER';
 
 export type EquipmentStatus =
   | 'AVAILABLE'

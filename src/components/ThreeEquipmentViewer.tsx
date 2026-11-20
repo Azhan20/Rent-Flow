@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { VoiceInspectionRecorder } from './VoiceInspectionRecorder';
 import { 
   Box, 
   RotateCw, 
@@ -39,7 +40,6 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
   const [autoRotate, setAutoRotate] = useState<boolean>(true);
   const [activePart, setActivePart] = useState<string | null>(null);
   const [isDockCollapsed, setIsDockCollapsed] = useState<boolean>(false);
-  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [transcribedNote, setTranscribedNote] = useState<string>('');
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -595,32 +595,6 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
     };
   }, [activeModel, explodedFactor, wireframe, autoRotate]);
 
-  // Voice Note Recording
-  const handleToggleVoiceRecord = async () => {
-    if (isRecording) {
-      setIsRecording(false);
-      return;
-    }
-
-    setIsRecording(true);
-    setTranscribedNote('Listening to verbal condition report...');
-
-    // Simulate speech-to-text integration or browser web speech
-    setTimeout(() => {
-      const simulatedNotes = [
-        `Inspection of ${activeModel}: hydraulic seal on main cylinder inspected, zero leakages detected. Hour meter matches dispatch ticket. Wear rating within nominal limits.`,
-        `Visual check completed: track tension within 35mm spec, engine cooling fins clean, hydraulic return line dry, ready for customer release.`,
-        `Safety audit: emergency cutout tested, safety decals legible, all boom pivot grease points serviced. Customer handover approved.`,
-      ];
-      const randomNote = simulatedNotes[Math.floor(Math.random() * simulatedNotes.length)];
-      setTranscribedNote(randomNote);
-      setIsRecording(false);
-      if (onRecordVoiceNote) {
-        onRecordVoiceNote(randomNote);
-      }
-    }, 3200);
-  };
-
   return (
     <div className="relative w-full h-[620px] lg:h-[720px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex flex-col">
       {/* 3D Canvas Container (Full Bleed) */}
@@ -694,7 +668,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
 
           <div className="space-y-2 text-xs">
             <div className="p-2 bg-slate-800/80 rounded-lg border border-slate-700/50">
-              <span className="text-slate-400 block text-[10px] font-semibold uppercase">Live Telemetry</span>
+              <span className="text-slate-400 block text-[10px] font-semibold uppercase">Illustrative sample metrics</span>
               <span className="text-slate-200 font-mono font-medium">{telematicsData[activePart].metric}</span>
             </div>
 
@@ -823,18 +797,10 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
                   <Mic className="w-3.5 h-3.5 text-rose-400" />
                   Voice Handover Dictation
                 </span>
-                <button
-                  onClick={handleToggleVoiceRecord}
-                  disabled={isRecording}
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md ${
-                    isRecording 
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 animate-pulse' 
-                      : 'bg-rose-600 hover:bg-rose-500 text-white'
-                  }`}
-                >
-                  <Mic className="w-4 h-4" />
-                  {isRecording ? 'Listening (gemini-3.5-transcribe)...' : 'Record Verbal Inspection Note'}
-                </button>
+                <VoiceInspectionRecorder onTranscriptComplete={(note) => {
+                  setTranscribedNote(note);
+                  onRecordVoiceNote?.(note);
+                }} />
               </div>
             </div>
           )}

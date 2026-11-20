@@ -10,7 +10,6 @@ import {
   Wrench,
   BarChart3,
   Store,
-  ShieldAlert,
   Globe,
   HardHat,
 } from 'lucide-react';
@@ -22,7 +21,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) => {
-  const { activeView, setActiveView, bookings, invoices, maintenanceOrders, currentRole } = useRentFlow();
+  const { activeView, setActiveView, bookings, invoices, maintenanceOrders } = useRentFlow();
 
   const activeBookingsCount = bookings.filter((b) => b.status === 'CHECKED_OUT' || b.status === 'CONFIRMED').length;
   const overdueInvoicesCount = invoices.filter((i) => i.status === 'OVERDUE' || (i.status === 'SENT' && new Date(i.dueDate) < new Date())).length;
@@ -42,10 +41,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
     { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
     { id: 'storefront', label: 'Public Storefront', icon: Store },
   ];
-
-  if (currentRole === 'SUPER_ADMIN' || currentRole === 'ORG_OWNER') {
-    navItems.push({ id: 'superadmin', label: 'Super Admin Console', icon: ShieldAlert });
-  }
 
   const handleSelect = (id: string) => {
     setActiveView(id);
@@ -76,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
             <div className="flex items-center gap-1.5">
               <span className="text-base font-bold tracking-tight text-white">RentFlow</span>
               <span className="rounded bg-blue-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-blue-400 border border-blue-500/20">
-                PRO
+                {import.meta.env.DEV ? 'DEMO' : 'APP'}
               </span>
             </div>
             <p className="text-[11px] text-slate-400">Equipment Rental SaaS</p>
@@ -146,13 +141,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
         <div className="border-t border-slate-800/80 p-3.5">
           <div className="rounded-lg bg-slate-900/90 p-2.5 text-xs border border-slate-800">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-300">Dispatch Telematics</span>
-              <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                ONLINE
+              <span className="text-[11px] font-semibold text-slate-300">{import.meta.env.DEV ? 'Sample workspace' : 'Workspace'}</span>
+              <span className="flex items-center gap-1 text-[10px] font-medium text-amber-300">
+                {import.meta.env.DEV ? 'DEMO DATA' : 'READY'}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">All 3 regional depots synced. GPS & meter readings streaming.</p>
+            <p className="mt-1 text-[11px] text-slate-400">{import.meta.env.DEV ? 'Sample operational records are held in memory only.' : 'Organization connection required.'}</p>
           </div>
         </div>
       </aside>

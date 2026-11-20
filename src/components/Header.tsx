@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import {
   Building2,
-  UserCheck,
   Plus,
   Sparkles,
-  RotateCcw,
   Globe,
   LayoutDashboard,
   Check,
@@ -13,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useRentFlow } from '../context/RentFlowContext';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
 
 interface HeaderProps {
   onOpenNewBooking: () => void;
@@ -22,31 +19,17 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilot, onOpenAuth }) => {
-  const { user } = useAuth();
+  const { user, signOutUser } = useAuth();
   const {
     currentOrg,
     organizations,
     switchOrganization,
     currentRole,
-    setCurrentRole,
     activeView,
     setActiveView,
-    resetToDemoDefaults,
   } = useRentFlow();
 
   const [showOrgDropdown, setShowOrgDropdown] = useState(false);
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-
-  const roles: { role: UserRole; label: string; badgeColor: string }[] = [
-    { role: 'ORG_OWNER', label: 'Organization Owner', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-    { role: 'MANAGER', label: 'Rental Manager', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    { role: 'STAFF', label: 'Yard & Counter Staff', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
-    { role: 'SUPER_ADMIN', label: 'SaaS Super Admin', badgeColor: 'bg-purple-50 text-purple-700 border-purple-200' },
-    { role: 'CUSTOMER', label: 'Customer View', badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
-  ];
-
-  const currentRoleInfo = roles.find((r) => r.role === currentRole) || roles[0];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 shadow-xs">
@@ -97,48 +80,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilo
         <span className="hidden sm:inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200">
           {currentOrg.planTier}
         </span>
+        {import.meta.env.DEV && (
+          <span className="hidden md:inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800">
+            DEVELOPMENT DEMO DATA
+          </span>
+        )}
       </div>
 
-      {/* Right Controls: Role switcher, AI Copilot, + Booking, Reset, Mode Toggle */}
+      {/* Right Controls: AI Copilot, booking, view toggle and session */}
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Role Switcher for easy testing of RBAC */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-            className={`hidden lg:flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${currentRoleInfo.badgeColor}`}
-            title="Click to simulate other user roles"
-          >
-            <UserCheck className="h-3.5 w-3.5" />
-            <span>Role: {currentRoleInfo.label}</span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
-          </button>
-
-          {showRoleDropdown && (
-            <div className="absolute right-0 mt-1 w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg z-50">
-              <div className="px-2 py-1 text-xs font-medium uppercase tracking-wider text-slate-400">
-                Simulate Role (RBAC)
-              </div>
-              {roles.map((r) => (
-                <button
-                  key={r.role}
-                  type="button"
-                  onClick={() => {
-                    setCurrentRole(r.role);
-                    setShowRoleDropdown(false);
-                  }}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    currentRole === r.role ? 'bg-slate-100 font-semibold' : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>{r.label}</span>
-                  {currentRole === r.role && <Check className="h-3.5 w-3.5 text-blue-600" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* AI Copilot & Market Intelligence Button */}
         <button
           type="button"
@@ -201,47 +151,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenNewBooking, onOpenAiCopilo
             {user ? (user.displayName || user.email?.split('@')[0]) : 'Sign In'}
           </span>
         </button>
-
-        {/* Reset Demo Button */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowResetConfirm(!showResetConfirm)}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-            title="Reset demo data"
-            aria-label="Reset demo data"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-
-          {showResetConfirm && (
-            <div className="absolute right-0 mt-1 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-xl z-50 text-xs">
-              <p className="font-semibold text-slate-800">Reset Demo Data?</p>
-              <p className="mt-1 text-slate-500">
-                Restores original sample equipment, bookings, customers, and invoices.
-              </p>
-              <div className="mt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowResetConfirm(false)}
-                  className="rounded-md border border-slate-200 px-2.5 py-1 text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetToDemoDefaults();
-                    setShowResetConfirm(false);
-                  }}
-                  className="rounded-md bg-red-600 px-2.5 py-1 font-semibold text-white hover:bg-red-700"
-                >
-                  Reset All
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <button type="button" onClick={() => void signOutUser()} className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50" aria-label={`Sign out ${user?.email || 'current account'}`}>Sign out</button>
       </div>
     </header>
   );

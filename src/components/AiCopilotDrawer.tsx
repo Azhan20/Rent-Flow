@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   RefreshCw,
 } from 'lucide-react';
-import { useRentFlow } from '../context/RentFlowContext';
+import { useAuthenticatedApi, readApiError } from '../lib/api';
 
 interface AiCopilotDrawerProps {
   isOpen: boolean;
@@ -30,14 +30,14 @@ interface ChatMessage {
 }
 
 export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClose }) => {
-  const { currentOrg, equipmentList, bookings, maintenanceOrders } = useRentFlow();
+  const authenticatedFetch = useAuthenticatedApi();
 
   const [activeTab, setActiveTab] = useState<'chat' | 'search'>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'm-1',
       role: 'assistant',
-      content: `Hello! I am **RentFlow Operations Copilot** for ${currentOrg.name}.\n\nI can help you with:\n- Rental duration rate calculations and deposit advice\n- Live equipment market intelligence via **Google Search Grounding**\n- Machinery telematics & preventive service scheduling\n- Custom rental agreement terms & damage settlement estimates.\n\nHow can I assist your dispatch team today?`,
+      content: 'RentFlow Operations Copilot is ready when AI is configured.\n\nAsk about rental operations, inspections, maintenance, or market research.',
       timestamp: 'Just now',
     },
   ]);
@@ -74,7 +74,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClos
     setLoading(true);
 
     try {
-      const response = await fetch('/api/gemini/chat', {
+      const response = await authenticatedFetch('/api/gemini/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,17 +82,13 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClos
             role: m.role,
             content: m.content,
           })),
-          context: {
-            organization: currentOrg.name,
-            totalFleetCount: equipmentList.length,
-            activeRentalsCount: bookings.filter((b) => b.status === 'CHECKED_OUT').length,
-            activeMaintenanceCount: maintenanceOrders.filter((m) => m.status === 'IN_PROGRESS').length,
-          },
         }),
       });
 
-      const data = await response.json();
-      const reply = data.reply || data.fallbackText || 'I am ready to help with your rental fleet operations.';
+      if (!response.ok) throw new Error(await readApiError(response));
+      const payload: unknown = await response.json();
+      const reply = isRecord(payload) && typeof payload.reply === 'string' ? payload.reply.trim() : '';
+      if (!reply) throw new Error('The AI service returned an empty response.');
 
       const assistantMsg: ChatMessage = {
         id: `a-${Date.now()}`,
@@ -109,13 +105,17 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClos
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: 'RentFlow Copilot is ready. (Check that your GEMINI_API_KEY is configured in Settings > Secrets).',
+          content: err instanceof Error ? err.message : 'RentFlow Copilot could not complete the request.',
           timestamp: 'Just now',
         },
       ]);
     } finally {
       setLoading(false);
     }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
   };
 
   const handleRunMarketResearch = async (e?: React.FormEvent) => {
@@ -124,7 +124,7 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClos
 
     setLoading(true);
     try {
-      const response = await fetch('/api/gemini/market-research', {
+      const response = await authenticatedFetch('/api/gemini/market-research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,13 +133,14 @@ export const AiCopilotDrawer: React.FC<AiCopilotDrawerProps> = ({ isOpen, onClos
         }),
       });
 
+      if (!response.ok) throw new Error(await readApiError(response));
       const data = await response.json();
       setMarketSearchResults({
         answer: data.answer,
         sources: data.sources || [],
       });
     } catch (err) {
-      console.error(err);
+      setMarketSearchResults({ answer: err instanceof Error ? err.message : 'Market research could not be completed.', sources: [] });
     } finally {
       setLoading(false);
     }

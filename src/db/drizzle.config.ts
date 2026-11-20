@@ -1,24 +1,31 @@
 import { defineConfig } from 'drizzle-kit';
 import * as dotenv from 'dotenv';
+import { resolve } from 'node:path';
+import {
+  resolveProjectRootFromConfigUrl,
+  validateTestingDatabaseTarget,
+} from './drizzle-config-validation';
 
-dotenv.config();
+const projectRoot = resolveProjectRootFromConfigUrl(import.meta.url);
+dotenv.config({ path: resolve(projectRoot, '.env') });
 
-const sqlHost = process.env.SQL_HOST || '127.0.0.1';
-const sqlDbName = process.env.SQL_DB_NAME || 'postgres';
-const user = process.env.SQL_ADMIN_USER || process.env.SQL_USER || 'postgres';
-const password = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD || '';
+const target = validateTestingDatabaseTarget({
+  DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_SSL: process.env.DATABASE_SSL,
+});
 
 export default defineConfig({
-  schema: './src/db/schema.ts',
-  out: './drizzle',
+  schema: resolve(projectRoot, 'src/db/schema.ts'),
+  out: resolve(projectRoot, 'drizzle'),
   dialect: 'postgresql',
   schemaFilter: ['public'],
   dbCredentials: {
-    host: sqlHost,
-    user: user,
-    password: password,
-    database: sqlDbName,
-    ssl: false,
+    host: target.host,
+    port: target.port,
+    user: target.user,
+    password: target.password,
+    database: target.database,
+    ssl: target.ssl,
   },
-  verbose: true,
+  verbose: false,
 });

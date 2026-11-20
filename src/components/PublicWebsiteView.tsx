@@ -22,30 +22,41 @@ import {
 } from 'lucide-react';
 import { useRentFlow } from '../context/RentFlowContext';
 import { useAuth } from '../context/AuthContext';
+import { usePageMetadata } from '../lib/pageMetadata';
 
 interface PublicWebsiteViewProps {
   onOpenAuthModal?: (mode: 'LOGIN' | 'REGISTER' | 'PROFILE') => void;
   onOpenCheckoutModal?: (planName: string, billingCycle: 'monthly' | 'yearly') => void;
+  onOpenDashboard?: () => void;
+  onPlanSelected?: (planName: string, billingCycle: 'monthly' | 'yearly') => void;
 }
 
 export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
   onOpenAuthModal,
   onOpenCheckoutModal,
+  onOpenDashboard,
+  onPlanSelected,
 }) => {
+  usePageMetadata('RentFlow | Equipment rental operations', true);
   const { setActiveView } = useRentFlow();
   const { user, setPendingPlan } = useAuth();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [activeIndustry, setActiveIndustry] = useState<string>('construction');
 
   const handleSelectPlan = (planName: string) => {
+    onPlanSelected?.(planName, billingCycle);
     if (!user) {
       setPendingPlan(planName);
       if (onOpenAuthModal) {
         onOpenAuthModal('REGISTER');
+      } else {
+        window.location.assign(`/?auth=signup&plan=${encodeURIComponent(planName)}&cycle=${billingCycle}`);
       }
     } else {
       if (onOpenCheckoutModal) {
         onOpenCheckoutModal(planName, billingCycle);
+      } else {
+        window.location.assign(`/?auth=signup&plan=${encodeURIComponent(planName)}&cycle=${billingCycle}`);
       }
     }
   };
@@ -57,7 +68,6 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       icon: HardHat,
       headline: 'Built for excavators, rollers, backhoes & telehandlers',
       desc: 'Track engine hours, prevent double-booking on major job sites, schedule 250h hydraulic services, and mandate digital return inspections.',
-      stats: '68% faster field check-outs',
     },
     {
       id: 'aerial',
@@ -65,7 +75,6 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       icon: Truck,
       headline: 'Safety certifications & OSHA rigging compliance',
       desc: 'Keep track of ANSI/OSHA annual inspections, platform capacity limits, and multi-week commercial tier contract billing.',
-      stats: 'Zero lost transport turnaround',
     },
     {
       id: 'power',
@@ -73,7 +82,6 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       icon: Zap,
       headline: 'Towable WhisperWatt generators & light towers',
       desc: 'Manage fuel level surcharges, sound-attenuation ratings (dBA), weekend event surge pricing, and cable ramp bulk bundles.',
-      stats: '99.8% on-time dispatch SLA',
     },
     {
       id: 'tools',
@@ -81,7 +89,6 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       icon: Wrench,
       headline: 'Compactors, trenchers, concrete saws & pumps',
       desc: 'Rapid counter POS checkouts, consumable blade billing, barcode scanning, and instant driver license capture.',
-      stats: '15-second customer pickup',
     },
   ];
 
@@ -89,6 +96,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
 
   const plans = [
     {
+      id: 'starter-depot',
       name: 'Starter Depot',
       monthlyPrice: 79,
       yearlyPrice: 65,
@@ -104,6 +112,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       popular: false,
     },
     {
+      id: 'growth-fleet',
       name: 'Growth Fleet',
       monthlyPrice: 149,
       yearlyPrice: 119,
@@ -120,6 +129,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       popular: true,
     },
     {
+      id: 'business-multi-yard',
       name: 'Business Multi-Yard',
       monthlyPrice: 299,
       yearlyPrice: 239,
@@ -144,15 +154,15 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
     },
     {
       q: 'How are security deposits managed in RentFlow?',
-      a: 'Deposits are strictly tracked as refundable liabilities, completely separated from rental operating revenue. When an asset is returned, any damage, cleaning, or refueling fees are itemized, and the net refund is calculated automatically.',
+      a: 'Rental requests include an estimated deposit amount. Deposit collection, refunds, and return deductions are not connected to a payment workflow yet.',
     },
     {
       q: 'Can customers book directly through our own website?',
-      a: 'Yes! Every tenant gets a dedicated, branded storefront (e.g. yourcompany.rentflow.app or a custom domain) with live catalog browsing, rate calculations, and instant quote inquiries that feed directly into your booking queue.',
+      a: 'A storefront preview is available in the development demo. Branded customer domains and public quote intake are not enabled yet.',
     },
     {
       q: 'Does RentFlow integrate with AI and live market intelligence?',
-      a: 'Yes. RentFlow comes with an AI Fleet Copilot that can answer operational questions, draft lease clauses, and query live regional equipment rental benchmarks using Google Search Grounding.',
+      a: 'Authenticated Gemini chat and grounded market research are wired when a server key is configured. The assistant does not read organization records and usage entitlements are not implemented yet.',
     },
   ];
 
@@ -165,7 +175,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
           <span>Next-Gen Equipment Rental Software for Modern Plant & Tool Hire</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden md:inline text-slate-400">SOC-Ready Multi-Tenant</span>
+          <span className="hidden md:inline text-slate-400">Private beta · development in progress</span>
           {user ? (
             <button
               type="button"
@@ -189,7 +199,12 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
           )}
           <button
             type="button"
-            onClick={() => setActiveView('dashboard')}
+            onClick={() => {
+              if (onOpenDashboard) onOpenDashboard();
+              else if (user) setActiveView('dashboard');
+              else if (onOpenAuthModal) onOpenAuthModal('LOGIN');
+              else window.location.assign('/?auth=login');
+            }}
             className="text-white font-semibold hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
           >
             <span>App Dashboard</span>
@@ -207,35 +222,35 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-            Manage your rental fleet with{' '}
+            Manage equipment and rental requests with{' '}
             <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
-              zero overbooking
+              organization-scoped controls
             </span>{' '}
-            and instant digital handovers.
+            and a clear path to complete rental operations.
           </h1>
 
           <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-300">
             From CAT mini excavators and boom lifts to towable generators and site safety gear.
-            RentFlow handles reservations, meter telematics, return inspections, deposit escrow, and online customer storefronts.
+            RentFlow currently supports authenticated organization setup, equipment and customer records, and server-checked rental requests. Additional rental and billing workflows are in development.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <button
               type="button"
-              onClick={() => setActiveView('dashboard')}
+              onClick={() => window.location.assign('/?auth=signup')}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 transition-all"
             >
-              <span>Explore Live Workspace Demo</span>
+              <span>Create your workspace</span>
               <ArrowRight className="h-4 w-4" />
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveView('storefront')}
+              onClick={() => window.location.assign('/?auth=login')}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-6 py-3.5 text-sm font-bold text-slate-200 hover:bg-slate-800 transition-all"
             >
               <Store className="h-4 w-4 text-slate-400" />
-              <span>Preview Customer Storefront</span>
+              <span>Sign in to continue</span>
             </button>
           </div>
         </div>
@@ -350,15 +365,12 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-3 max-w-xl">
-              <span className="rounded-md bg-blue-50 text-blue-700 px-2.5 py-1 text-xs font-bold">
-                {currentInd.stats}
-              </span>
               <h4 className="text-xl font-bold text-slate-900">{currentInd.headline}</h4>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{currentInd.desc}</p>
             </div>
             <button
               type="button"
-              onClick={() => setActiveView('inventory')}
+              onClick={() => window.location.assign('/?auth=signup')}
               className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shrink-0"
             >
               <span>View Fleet Inventory</span>
@@ -377,6 +389,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
           <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
             Simple plans that scale with your fleet size
           </h3>
+          <p className="text-sm text-slate-600">Plan prices are a preview. Billing and trial activation are not configured.</p>
 
           <div className="flex items-center justify-center gap-3 pt-2">
             <span className={`text-xs font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>
@@ -384,6 +397,9 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
             </span>
             <button
               type="button"
+              role="switch"
+              aria-checked={billingCycle === 'yearly'}
+              aria-label="Annual billing preview"
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
               className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors"
             >
@@ -394,7 +410,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
               />
             </button>
             <span className={`text-xs font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-400'}`}>
-              Annual <span className="text-emerald-600 font-extrabold">(Save 20%)</span>
+              Annual
             </span>
           </div>
         </div>
@@ -449,7 +465,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
                         : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
                     }`}
                   >
-                    Start 14-Day Free Trial
+                    Select plan (payments not configured)
                   </button>
                 </div>
               </div>

@@ -183,15 +183,15 @@ export const FleetMapView: React.FC = () => {
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Navigation className="w-5 h-5 text-amber-500" />
-              Live Fleet GPS & Telematics Dispatch
+              Sample Fleet Map
             </h2>
             <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
               <Radio className="w-3 h-3 animate-pulse" />
-              Real-Time Tracking
+              Development Demo
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Centrally monitor machinery positions, job site deployments, depot inventory, and telemetry across {currentOrg.name}.
+            Illustrative sample locations for {currentOrg.name}; no live GPS or telematics feed is connected.
           </p>
         </div>
 

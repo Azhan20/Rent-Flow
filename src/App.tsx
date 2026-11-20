@@ -13,7 +13,6 @@ import { CalendarDispatchView } from './components/CalendarDispatchView';
 import { MaintenanceView } from './components/MaintenanceView';
 import { ReportsView } from './components/ReportsView';
 import { StorefrontPreview } from './components/StorefrontPreview';
-import { SuperAdminView } from './components/SuperAdminView';
 import { PublicWebsiteView } from './components/PublicWebsiteView';
 import { FleetMapView } from './components/FleetMapView';
 import { ThreeEquipmentViewer } from './components/ThreeEquipmentViewer';
@@ -23,6 +22,8 @@ import { CsvImportModal } from './components/CsvImportModal';
 import { AuthModal } from './components/AuthModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { Menu } from 'lucide-react';
+import { AuthScreen } from './components/AuthScreen';
+import { WorkspaceSetup } from './components/WorkspaceSetup';
 
 const MainLayout: React.FC = () => {
   const { activeView, setActiveView } = useRentFlow();
@@ -69,15 +70,24 @@ const MainLayout: React.FC = () => {
     return (
       <div className="min-h-screen bg-white">
         <PublicWebsiteView
+          onPlanSelected={(plan, cycle) => {
+            setCheckoutPlanName(plan);
+            setCheckoutBillingCycle(cycle);
+          }}
           onOpenAuthModal={(mode) => {
             setAuthModalMode(mode);
             setAuthModalOpen(true);
           }}
           onOpenCheckoutModal={(plan, cycle) => {
-            setCheckoutPlanName(plan);
-            setCheckoutBillingCycle(cycle);
-            setCheckoutModalOpen(true);
+            if (import.meta.env.DEV) {
+              setCheckoutPlanName(plan);
+              setCheckoutBillingCycle(cycle);
+              setCheckoutModalOpen(true);
+            } else {
+              setPendingPlan(plan);
+            }
           }}
+          onOpenDashboard={() => setActiveView('dashboard')}
         />
 
         <AuthModal
@@ -85,7 +95,7 @@ const MainLayout: React.FC = () => {
           onClose={() => setAuthModalOpen(false)}
           initialMode={authModalMode}
           onAuthSuccess={() => {
-            if (pendingPlan) {
+            if (pendingPlan && import.meta.env.DEV) {
               setCheckoutPlanName(pendingPlan);
               setCheckoutModalOpen(true);
             }
@@ -98,6 +108,7 @@ const MainLayout: React.FC = () => {
           planName={checkoutPlanName}
           billingCycle={checkoutBillingCycle}
           onSubscriptionSuccess={() => {
+            setPendingPlan(null);
             setActiveView('dashboard');
           }}
         />
@@ -195,7 +206,6 @@ const MainLayout: React.FC = () => {
 
             {activeView === 'storefront' && <StorefrontPreview />}
 
-            {activeView === 'superadmin' && <SuperAdminView />}
           </div>
         </main>
       </div>
@@ -235,6 +245,7 @@ const MainLayout: React.FC = () => {
         planName={checkoutPlanName}
         billingCycle={checkoutBillingCycle}
         onSubscriptionSuccess={() => {
+          setPendingPlan(null);
           setActiveView('dashboard');
         }}
       />
@@ -242,12 +253,87 @@ const MainLayout: React.FC = () => {
   );
 };
 
+function PublicMarketingExperience() {
+  const { pendingPlan, setPendingPlan } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'LOGIN' | 'REGISTER' | 'FORGOT' | 'PROFILE'>('LOGIN');
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutPlanName, setCheckoutPlanName] = useState('Growth Fleet');
+  const [checkoutBillingCycle, setCheckoutBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  return (
+    <RentFlowProvider>
+      <>
+        <PublicWebsiteView
+          onPlanSelected={(plan, cycle) => {
+            setCheckoutPlanName(plan);
+            setCheckoutBillingCycle(cycle);
+          }}
+          onOpenAuthModal={(mode) => {
+            setAuthModalMode(mode);
+            setAuthModalOpen(true);
+          }}
+          onOpenCheckoutModal={(plan, cycle) => {
+            if (import.meta.env.DEV) {
+              setCheckoutPlanName(plan);
+              setCheckoutBillingCycle(cycle);
+              setCheckoutModalOpen(true);
+            } else {
+              setPendingPlan(plan);
+            }
+          }}
+          onOpenDashboard={() => window.location.assign('/?auth=login')}
+        />
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialMode={authModalMode}
+          onAuthSuccess={() => {
+            if (pendingPlan && import.meta.env.DEV) {
+              setCheckoutPlanName(pendingPlan);
+              setCheckoutModalOpen(true);
+            }
+          }}
+        />
+        <CheckoutModal
+          isOpen={checkoutModalOpen}
+          onClose={() => setCheckoutModalOpen(false)}
+          planName={checkoutPlanName}
+          billingCycle={checkoutBillingCycle}
+          onSubscriptionSuccess={() => {
+            setPendingPlan(null);
+            setCheckoutModalOpen(false);
+          }}
+        />
+      </>
+    </RentFlowProvider>
+  );
+}
+
+function AuthenticatedApplication() {
+  const { user, loading, pendingPlan } = useAuth();
+  const query = new URLSearchParams(window.location.search);
+  const planIds: Record<string, string> = { 'starter-depot': 'Starter Depot', 'growth-fleet': 'Growth Fleet', 'business-multi-yard': 'Business Multi-Yard' };
+  const selectedPlan = planIds[query.get('plan') || ''];
+  const initialMode = query.get('auth') === 'signup' ? 'signup' : 'login';
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-sm text-white">Loading secure session…</div>;
+  if (!user && !query.has('auth')) return <PublicMarketingExperience />;
+  if (!user) return <AuthScreen selectedPlan={selectedPlan} initialMode={initialMode} />;
+  if (pendingPlan && !import.meta.env.DEV) {
+    if (!user.emailVerified) return <AuthScreen selectedPlan={pendingPlan} initialMode={initialMode} />;
+    return <WorkspaceSetup selectedPlan={pendingPlan} billingCycle={query.get('cycle') === 'yearly' ? 'yearly' : 'monthly'} />;
+  }
+  if (pendingPlan && !query.has('auth')) return <PublicMarketingExperience />;
+  if (!user.emailVerified) return <AuthScreen selectedPlan={selectedPlan} initialMode={initialMode} />;
+
+  if (!import.meta.env.DEV) return <WorkspaceSetup selectedPlan={selectedPlan} billingCycle={query.get('cycle') === 'yearly' ? 'yearly' : 'monthly'} />;
+
+  return <RentFlowProvider><MainLayout /></RentFlowProvider>;
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <RentFlowProvider>
-        <MainLayout />
-      </RentFlowProvider>
-    </AuthProvider>
+    <AuthProvider><AuthenticatedApplication /></AuthProvider>
   );
 }

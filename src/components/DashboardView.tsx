@@ -8,7 +8,6 @@ import {
   DollarSign,
   ShieldCheck,
   Plus,
-  ArrowUpRight,
   ArrowRight,
   Calendar,
   CheckCircle2,
@@ -82,7 +81,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {currentOrg.name} — Operations Command
           </h1>
           <p className="text-xs text-slate-500">
-            Real-time fleet tracking, booking dispatch, and financial ledger for {currentOrg.locations.length} regional depots.
+            Sample development data for {currentOrg.locations.length} regional depots. Live fleet tracking and financial integrations are not connected.
           </p>
         </div>
 
@@ -133,9 +132,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-bold tracking-tight text-slate-900">{utilizationRate}%</span>
-            <span className="text-[11px] font-semibold text-emerald-600 flex items-center">
-              <ArrowUpRight className="h-3 w-3" /> +4.2%
-            </span>
           </div>
           <div className="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
             <div
@@ -175,7 +171,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="text-2xl font-bold tracking-tight text-slate-900">
               ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
-            <span className="text-[11px] font-semibold text-emerald-600">+$2,840</span>
           </div>
           <p className="mt-3 text-[11px] text-slate-400">
             ${totalCollected.toLocaleString()} collected • ${outstandingBalance.toLocaleString()} due
@@ -212,7 +207,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               RentFlow Dispatch AI Insight
             </h3>
             <p className="text-xs text-purple-800/80 mt-0.5">
-              High weekend demand projected for Earthmoving & Aerial Lifts. Suggest reviewing weekly rate optimization or querying live regional market rates with Google Search Grounding.
+              Organization data is not connected to AI insights. Copilot can answer general operations questions, but these insights are not generated from this workspace's bookings or inventory.
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import {
   Organization,
   UserRole,
@@ -24,7 +24,6 @@ interface RentFlowContextType {
   maintenanceOrders: MaintenanceWorkOrder[];
   activeView: string;
   setActiveView: (view: string) => void;
-  setCurrentRole: (role: UserRole) => void;
   switchOrganization: (orgId: string) => void;
   addEquipment: (item: Omit<EquipmentModel, 'id'>) => void;
   updateEquipment: (id: string, item: Partial<EquipmentModel>) => void;
@@ -46,7 +45,6 @@ interface RentFlowContextType {
   createMaintenanceOrder: (order: Omit<MaintenanceWorkOrder, 'id' | 'orderNumber'>) => void;
   updateMaintenanceStatus: (id: string, status: MaintenanceWorkOrder['status']) => void;
   updateStorefront: (settings: Partial<Organization['storefront']>) => void;
-  resetToDemoDefaults: () => void;
 }
 
 const RentFlowContext = createContext<RentFlowContextType | undefined>(undefined);
@@ -628,76 +626,24 @@ const SEED_MAINTENANCE: MaintenanceWorkOrder[] = [
 ];
 
 export const RentFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [organizations, setOrganizations] = useState<Organization[]>(() => {
-    const saved = localStorage.getItem('rentflow_orgs');
-    return saved ? JSON.parse(saved) : SEED_ORGANIZATIONS;
-  });
+  const [organizations, setOrganizations] = useState<Organization[]>(SEED_ORGANIZATIONS);
 
-  const [currentOrgId, setCurrentOrgId] = useState<string>(() => {
-    return localStorage.getItem('rentflow_current_org_id') || 'org-apex';
-  });
+  const [currentOrgId, setCurrentOrgId] = useState<string>('org-apex');
 
-  const [currentRole, setCurrentRole] = useState<UserRole>('ORG_OWNER');
+  const currentRole: UserRole = 'ORG_OWNER';
   const [activeView, setActiveView] = useState<string>('dashboard');
 
-  const [categories, setCategories] = useState<Category[]>(() => {
-    const saved = localStorage.getItem('rentflow_categories');
-    return saved ? JSON.parse(saved) : SEED_CATEGORIES;
-  });
+  const [categories, setCategories] = useState<Category[]>(SEED_CATEGORIES);
 
-  const [equipmentList, setEquipmentList] = useState<EquipmentModel[]>(() => {
-    const saved = localStorage.getItem('rentflow_equipment');
-    return saved ? JSON.parse(saved) : SEED_EQUIPMENT;
-  });
+  const [equipmentList, setEquipmentList] = useState<EquipmentModel[]>(SEED_EQUIPMENT);
 
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    const saved = localStorage.getItem('rentflow_customers');
-    return saved ? JSON.parse(saved) : SEED_CUSTOMERS;
-  });
+  const [customers, setCustomers] = useState<Customer[]>(SEED_CUSTOMERS);
 
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('rentflow_bookings');
-    return saved ? JSON.parse(saved) : SEED_BOOKINGS;
-  });
+  const [bookings, setBookings] = useState<Booking[]>(SEED_BOOKINGS);
 
-  const [invoices, setInvoices] = useState<Invoice[]>(() => {
-    const saved = localStorage.getItem('rentflow_invoices');
-    return saved ? JSON.parse(saved) : SEED_INVOICES;
-  });
+  const [invoices, setInvoices] = useState<Invoice[]>(SEED_INVOICES);
 
-  const [maintenanceOrders, setMaintenanceOrders] = useState<MaintenanceWorkOrder[]>(() => {
-    const saved = localStorage.getItem('rentflow_maintenance');
-    return saved ? JSON.parse(saved) : SEED_MAINTENANCE;
-  });
-
-  // Save to localStorage whenever states change
-  useEffect(() => {
-    localStorage.setItem('rentflow_orgs', JSON.stringify(organizations));
-  }, [organizations]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_current_org_id', currentOrgId);
-  }, [currentOrgId]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_equipment', JSON.stringify(equipmentList));
-  }, [equipmentList]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_customers', JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_bookings', JSON.stringify(bookings));
-  }, [bookings]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_invoices', JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem('rentflow_maintenance', JSON.stringify(maintenanceOrders));
-  }, [maintenanceOrders]);
+  const [maintenanceOrders, setMaintenanceOrders] = useState<MaintenanceWorkOrder[]>(SEED_MAINTENANCE);
 
   const currentOrg = organizations.find((o) => o.id === currentOrgId) || organizations[0];
 
@@ -1098,27 +1044,6 @@ export const RentFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
-  const resetToDemoDefaults = () => {
-    localStorage.removeItem('rentflow_orgs');
-    localStorage.removeItem('rentflow_current_org_id');
-    localStorage.removeItem('rentflow_equipment');
-    localStorage.removeItem('rentflow_customers');
-    localStorage.removeItem('rentflow_bookings');
-    localStorage.removeItem('rentflow_invoices');
-    localStorage.removeItem('rentflow_maintenance');
-
-    setOrganizations(SEED_ORGANIZATIONS);
-    setCurrentOrgId('org-apex');
-    setCategories(SEED_CATEGORIES);
-    setEquipmentList(SEED_EQUIPMENT);
-    setCustomers(SEED_CUSTOMERS);
-    setBookings(SEED_BOOKINGS);
-    setInvoices(SEED_INVOICES);
-    setMaintenanceOrders(SEED_MAINTENANCE);
-    setCurrentRole('ORG_OWNER');
-    setActiveView('dashboard');
-  };
-
   return (
     <RentFlowContext.Provider
       value={{
@@ -1133,7 +1058,6 @@ export const RentFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         maintenanceOrders,
         activeView,
         setActiveView,
-        setCurrentRole,
         switchOrganization,
         addEquipment,
         updateEquipment,
@@ -1149,7 +1073,6 @@ export const RentFlowProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         createMaintenanceOrder,
         updateMaintenanceStatus,
         updateStorefront,
-        resetToDemoDefaults,
       }}
     >
       {children}

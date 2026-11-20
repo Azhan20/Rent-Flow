@@ -1,15 +1,17 @@
 {
-  "name": "react-example",
+  "name": "rentflow",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "node server.ts",
-    "build": "vite build",
+    "start": "node dist/server.js",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/server.js",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "lint": "tsc --noEmit",
+    "test": "bun test",
+    "db:migrate:testing": "bun src/db/run-testing-migration.ts --config=src/db/drizzle.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -22,8 +24,10 @@
     "drizzle-kit": "^0.31.11",
     "drizzle-orm": "^0.45.4",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.2.1",
     "firebase": "^13.2.0",
     "firebase-admin": "^14.5.0",
+    "helmet": "^8.1.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
@@ -44,5 +48,8 @@
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "@types/express": "^4.17.21"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
   }
 }

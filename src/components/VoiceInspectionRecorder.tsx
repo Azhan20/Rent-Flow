@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Mic, Square, Loader2, Volume2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mic, Square, Loader2, AlertCircle } from 'lucide-react';
+import { useAuthenticatedApi, readApiError } from '../lib/api';
 
 interface VoiceInspectionRecorderProps {
   onTranscriptComplete: (transcript: string) => void;
@@ -10,6 +11,7 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
   onTranscriptComplete,
   label = 'Record Verbal Inspection Note',
 }) => {
+  const authenticatedFetch = useAuthenticatedApi();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
         reader.onloadend = async () => {
           const base64Data = (reader.result as string).split(',')[1];
           try {
-            const res = await fetch('/api/gemini/transcribe', {
+            const res = await authenticatedFetch('/api/gemini/transcribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -50,13 +52,12 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
                 mimeType: 'audio/webm',
               }),
             });
+            if (!res.ok) throw new Error(await readApiError(res));
             const data = await res.json();
-            if (data.transcript) {
-              onTranscriptComplete(data.transcript);
-            }
+            if (typeof data.transcript !== 'string' || !data.transcript.trim()) throw new Error('No speech could be transcribed.');
+            onTranscriptComplete(data.transcript);
           } catch (err: any) {
-            console.error('Transcription error:', err);
-            setError('Voice transcription service unavailable.');
+            setError(err instanceof Error ? err.message : 'Voice transcription service unavailable.');
           } finally {
             setIsProcessing(false);
           }
@@ -66,18 +67,7 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err: any) {
-      console.warn('Microphone permission or hardware issue:', err);
-      // Fallback simulation for headless or restricted browser environments
-      setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setIsProcessing(true);
-        setTimeout(() => {
-          setIsProcessing(false);
-          const sample = "Verified physical condition: All hydraulic hoses intact, zero fluid seepage, hour meter 418.5, fuel tank at 90%, safety beacons operational.";
-          onTranscriptComplete(sample);
-        }, 1200);
-      }, 2500);
+      setError(err instanceof Error ? err.message : 'Microphone access is unavailable.');
     }
   };
 
