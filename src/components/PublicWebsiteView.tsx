@@ -3,154 +3,67 @@ import {
   HardHat,
   Truck,
   CalendarCheck,
-  ClipboardCheck,
-  Receipt,
   Store,
   Wrench,
-  BarChart3,
-  CheckCircle2,
   ArrowRight,
-  ShieldCheck,
-  ChevronDown,
   Layers,
   Sparkles,
   Zap,
-  Clock,
-  MapPin,
   Building2,
-  DollarSign,
 } from 'lucide-react';
-import { useRentFlow } from '../context/RentFlowContext';
 import { useAuth } from '../context/AuthContext';
 import { usePageMetadata } from '../lib/pageMetadata';
 
 interface PublicWebsiteViewProps {
   onOpenAuthModal?: (mode: 'LOGIN' | 'REGISTER' | 'PROFILE') => void;
-  onOpenCheckoutModal?: (planName: string, billingCycle: 'monthly' | 'yearly') => void;
   onOpenDashboard?: () => void;
-  onPlanSelected?: (planName: string, billingCycle: 'monthly' | 'yearly') => void;
 }
 
 export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
   onOpenAuthModal,
-  onOpenCheckoutModal,
   onOpenDashboard,
-  onPlanSelected,
 }) => {
   usePageMetadata('RentFlow | Equipment rental operations', true);
-  const { setActiveView } = useRentFlow();
-  const { user, setPendingPlan } = useAuth();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const { user } = useAuth();
   const [activeIndustry, setActiveIndustry] = useState<string>('construction');
-
-  const handleSelectPlan = (planName: string) => {
-    onPlanSelected?.(planName, billingCycle);
-    if (!user) {
-      setPendingPlan(planName);
-      if (onOpenAuthModal) {
-        onOpenAuthModal('REGISTER');
-      } else {
-        window.location.assign(`/?auth=signup&plan=${encodeURIComponent(planName)}&cycle=${billingCycle}`);
-      }
-    } else {
-      if (onOpenCheckoutModal) {
-        onOpenCheckoutModal(planName, billingCycle);
-      } else {
-        window.location.assign(`/?auth=signup&plan=${encodeURIComponent(planName)}&cycle=${billingCycle}`);
-      }
-    }
-  };
 
   const industries = [
     {
       id: 'construction',
       name: 'Heavy Civil & Plant Hire',
       icon: HardHat,
-      headline: 'Built for excavators, rollers, backhoes & telehandlers',
-      desc: 'Track engine hours, prevent double-booking on major job sites, schedule 250h hydraulic services, and mandate digital return inspections.',
+      headline: 'Construction and plant-hire equipment',
+      desc: 'Create equipment listings, maintain customer records, and submit rental requests. Dispatch, inspections, maintenance, and telematics workflows are not available yet.',
     },
     {
       id: 'aerial',
       name: 'Boom & Scissor Lifts',
       icon: Truck,
-      headline: 'Safety certifications & OSHA rigging compliance',
-      desc: 'Keep track of ANSI/OSHA annual inspections, platform capacity limits, and multi-week commercial tier contract billing.',
+      headline: 'Aerial lift equipment',
+      desc: 'Create equipment listings, maintain customer records, and submit rental requests. Dispatch, inspections, maintenance, and telematics workflows are not available yet.',
     },
     {
       id: 'power',
       name: 'Power & Climate Generation',
       icon: Zap,
-      headline: 'Towable WhisperWatt generators & light towers',
-      desc: 'Manage fuel level surcharges, sound-attenuation ratings (dBA), weekend event surge pricing, and cable ramp bulk bundles.',
+      headline: 'Power-generation equipment',
+      desc: 'Create equipment listings, maintain customer records, and submit rental requests. Dispatch, inspections, maintenance, and telematics workflows are not available yet.',
     },
     {
       id: 'tools',
       name: 'Tools & General Plant',
       icon: Wrench,
-      headline: 'Compactors, trenchers, concrete saws & pumps',
-      desc: 'Rapid counter POS checkouts, consumable blade billing, barcode scanning, and instant driver license capture.',
+      headline: 'Tools and general plant equipment',
+      desc: 'Create equipment listings, maintain customer records, and submit rental requests. Dispatch, inspections, maintenance, and telematics workflows are not available yet.',
     },
   ];
 
   const currentInd = industries.find((i) => i.id === activeIndustry) || industries[0];
 
-  const plans = [
-    {
-      id: 'starter-depot',
-      name: 'Starter Depot',
-      monthlyPrice: 79,
-      yearlyPrice: 65,
-      desc: 'Essential rental management for single-yard equipment shops.',
-      features: [
-        'Up to 25 Serialized & Bulk Assets',
-        'Single Depot / Yard Location',
-        'Online Booking Request Form',
-        'Digital Handover Checklist',
-        'PDF Invoices & Receipt Generator',
-        'Standard Email Support',
-      ],
-      popular: false,
-    },
-    {
-      id: 'growth-fleet',
-      name: 'Growth Fleet',
-      monthlyPrice: 149,
-      yearlyPrice: 119,
-      desc: 'Full-featured operations platform for growing regional rental companies.',
-      features: [
-        'Up to 100 Assets & Telematics Units',
-        'Up to 3 Regional Depot Yards',
-        'Custom Branded Public Storefront',
-        'Engine Hour Preventive Service Alerts',
-        'Damage Photo & Deposit Escrow Engine',
-        'RentFlow Copilot AI Dispatch Assistant',
-        'Priority Technical Support',
-      ],
-      popular: true,
-    },
-    {
-      id: 'business-multi-yard',
-      name: 'Business Multi-Yard',
-      monthlyPrice: 299,
-      yearlyPrice: 239,
-      desc: 'High-volume plant hire with multi-branch logistics and telematics.',
-      features: [
-        'Up to 500 Fleet Assets',
-        'Up to 10 Regional Yards & Transfers',
-        'Custom Domain + SSL Storefront',
-        'Google Search Market Rate Grounding',
-        'Net 30 Credit Limit CRM Tracking',
-        'Full REST API & Webhook Access',
-        'Dedicated Fleet Account Manager',
-      ],
-      popular: false,
-    },
-  ];
-
   const faqs = [
     {
       q: 'How does RentFlow prevent equipment double-booking?',
-      a: 'Our availability engine verifies overlapping date intervals with customizable cleaning/turnaround buffers (e.g. 2 hours) and checks against scheduled maintenance work orders before any reservation is confirmed.',
+      a: 'Rental requests are checked on the server against equipment availability for the requested dates. Requests remain pending review; maintenance blocks and turnaround buffers are not part of this workflow.',
     },
     {
       q: 'How are security deposits managed in RentFlow?',
@@ -158,30 +71,34 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
     },
     {
       q: 'Can customers book directly through our own website?',
-      a: 'A storefront preview is available in the development demo. Branded customer domains and public quote intake are not enabled yet.',
+      a: 'No. The current workspace supports internal rental requests. A public storefront, custom domains, and customer quote intake are not available yet.',
     },
     {
-      q: 'Does RentFlow integrate with AI and live market intelligence?',
-      a: 'Authenticated Gemini chat and grounded market research are wired when a server key is configured. The assistant does not read organization records and usage entitlements are not implemented yet.',
+      q: 'Is AI available in RentFlow?',
+      a: 'Authenticated Gemini chat and market-research API endpoints require a server-side Gemini API key, but no AI workspace panel is currently available. They do not read organization records, and usage entitlements are not implemented.',
     },
   ];
 
   return (
     <div className="bg-white text-slate-900 min-h-screen">
       {/* SaaS Marketing Top Bar */}
-      <div className="bg-slate-950 text-slate-300 text-xs py-2 px-4 flex items-center justify-between border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
-          <span>Next-Gen Equipment Rental Software for Modern Plant & Tool Hire</span>
+      <div className="flex flex-col gap-2 border-b border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" aria-hidden="true"></span>
+          <span className="truncate">Next-Gen Equipment Rental Software for Modern Plant & Tool Hire</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center justify-between gap-3 sm:justify-end">
           <span className="hidden md:inline text-slate-400">Private beta · development in progress</span>
           {user ? (
             <button
               type="button"
-              onClick={() => onOpenAuthModal?.('PROFILE')}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-200 hover:bg-slate-800 transition-colors"
+              onClick={() => {
+                if (onOpenAuthModal) onOpenAuthModal('PROFILE');
+                else window.location.assign('/?auth=login');
+              }}
+              className="flex min-h-11 min-w-0 items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-200 transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
               title="View account profile"
+              aria-label="View account profile"
             >
               <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
                 {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
@@ -191,8 +108,11 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
           ) : (
             <button
               type="button"
-              onClick={() => onOpenAuthModal?.('LOGIN')}
-              className="text-slate-300 hover:text-white font-medium text-xs transition-colors px-2 py-1 rounded-md hover:bg-slate-800"
+              onClick={() => {
+                if (onOpenAuthModal) onOpenAuthModal('LOGIN');
+                else window.location.assign('/?auth=login');
+              }}
+              className="min-h-11 rounded-md px-2 py-1 font-medium text-xs text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
             >
               Sign In
             </button>
@@ -201,11 +121,10 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
             type="button"
             onClick={() => {
               if (onOpenDashboard) onOpenDashboard();
-              else if (user) setActiveView('dashboard');
               else if (onOpenAuthModal) onOpenAuthModal('LOGIN');
               else window.location.assign('/?auth=login');
             }}
-            className="text-white font-semibold hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
+            className="inline-flex min-h-11 items-center gap-1 font-semibold text-xs text-white transition-colors hover:text-blue-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
           >
             <span>App Dashboard</span>
             <ArrowRight className="h-3 w-3" />
@@ -214,31 +133,31 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       </div>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 text-white py-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-slate-950 px-4 py-14 text-white sm:px-6 sm:py-20 lg:px-8">
         <div className="max-w-5xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-500/10 px-3.5 py-1 text-xs font-semibold text-blue-400 border border-blue-500/20">
+          <div className="mx-auto inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3.5 py-2 text-center text-xs font-semibold text-blue-300">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Multi-Tenant Equipment Rental Management SaaS</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+          <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Manage equipment and rental requests with{' '}
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
+            <span className="text-blue-300">
               organization-scoped controls
             </span>{' '}
             and a clear path to complete rental operations.
           </h1>
 
-          <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-300">
+          <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-300 sm:text-lg sm:leading-7">
             From CAT mini excavators and boom lifts to towable generators and site safety gear.
-            RentFlow currently supports authenticated organization setup, equipment and customer records, and server-checked rental requests. Additional rental and billing workflows are in development.
+            RentFlow currently supports authenticated organization setup, equipment and customer records, and server-checked rental requests. Other rental and billing workflows are not available.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
             <button
               type="button"
               onClick={() => window.location.assign('/?auth=signup')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 transition-all"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 sm:w-auto"
             >
               <span>Create your workspace</span>
               <ArrowRight className="h-4 w-4" />
@@ -247,7 +166,7 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
             <button
               type="button"
               onClick={() => window.location.assign('/?auth=login')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-6 py-3.5 text-sm font-bold text-slate-200 hover:bg-slate-800 transition-all"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-6 py-3.5 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300 sm:w-auto"
             >
               <Store className="h-4 w-4 text-slate-400" />
               <span>Sign in to continue</span>
@@ -257,88 +176,58 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       </section>
 
       {/* Feature Pillars Grid */}
-      <section className="py-16 px-4 max-w-6xl mx-auto space-y-12">
+      <section className="mx-auto max-w-6xl space-y-10 px-4 py-14 sm:space-y-12 sm:py-16">
         <div className="text-center space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-blue-600">
-            End-to-End Rental Operations
+            Available Workflows
           </h2>
-          <h3 className="text-3xl font-extrabold tracking-tight text-slate-900">
-            Everything your rental counter and yard needs
+          <h3 className="text-balance text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Core organization and rental request management
           </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300 sm:p-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Authenticated workspaces</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Firebase email/password and Google sign-in protect verified accounts. Create an organization and establish its owner membership.
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300 sm:p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Layers className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Equipment and customer records</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Add and view organization-scoped equipment and customer records stored in PostgreSQL.
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-slate-300 sm:p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <CalendarCheck className="h-5 w-5" />
             </div>
-            <h4 className="font-bold text-slate-900 text-base">Mathematical Availability Engine</h4>
+            <h4 className="font-bold text-slate-900 text-base">Rental requests</h4>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Interval overlap checks, turnaround cleaning buffers, and maintenance block detection ensure serial numbers and bulk stock never get double-booked.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <ClipboardCheck className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-base">Digital Check-out & Return Inspections</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Tablet-ready 6-point condition checks, digital signature pads, hour meter tracking, damage fee reconciliation, and instant deposit escrow refunds.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-base">Gemini AI Copilot & Market Search</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Integrated operations assistant powered by Gemini 3.8 Flash with Google Search Grounding for live regional equipment rental rate benchmarking.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <Store className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-base">White-Label Online Storefront</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Mobile-optimized catalog for each tenant with automated quote estimates, customer intake, and instant reservation synchronization.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-              <Wrench className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-base">Telematics & Preventive Service</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Automated service orders triggered when engine hours pass thresholds (250h, 500h, 1000h). Equipment is taken offline during scheduled shop hours.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-200 transition-all space-y-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <Receipt className="h-5 w-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-base">Automated Invoices & Escrow Ledgers</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Sequential organization numbering, multi-tier pricing (daily, weekly, monthly), delivery charges, tax calculation, and separated deposit liabilities.
+              The server calculates rates and checks requested quantity against availability. A request is pending review, not a confirmed booking.
             </p>
           </div>
         </div>
       </section>
 
       {/* Industry Verticals Section */}
-      <section className="bg-slate-50 py-16 px-4 border-y border-slate-200">
+      <section className="border-y border-slate-200 bg-slate-50 px-4 py-14 sm:py-16">
         <div className="max-w-5xl mx-auto space-y-8">
           <div className="text-center space-y-2">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-600">
-              Tailored by Equipment Class
+              Equipment types
             </h2>
-            <h3 className="text-3xl font-extrabold tracking-tight text-slate-900">
-              Designed for industrial equipment workflows
+            <h3 className="text-balance text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Manage equipment and rental requests
             </h3>
           </div>
 
@@ -350,9 +239,10 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
                   key={ind.id}
                   type="button"
                   onClick={() => setActiveIndustry(ind.id)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
+                  aria-pressed={activeIndustry === ind.id}
+                  className={`flex min-h-11 items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition-colors ${
                     activeIndustry === ind.id
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
@@ -363,17 +253,17 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
             })}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xs flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-3 max-w-xl">
+          <div className="flex flex-col items-start justify-between gap-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-8 md:flex-row md:items-center">
+            <div className="min-w-0 max-w-xl space-y-3">
               <h4 className="text-xl font-bold text-slate-900">{currentInd.headline}</h4>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{currentInd.desc}</p>
             </div>
             <button
               type="button"
               onClick={() => window.location.assign('/?auth=signup')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shrink-0"
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:w-auto"
             >
-              <span>View Fleet Inventory</span>
+              <span>Create your workspace</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -381,114 +271,35 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 px-4 max-w-6xl mx-auto space-y-12">
+      <section className="mx-auto max-w-6xl space-y-10 px-4 py-14 sm:space-y-12 sm:py-20">
         <div className="text-center space-y-4">
           <h2 className="text-xs font-bold uppercase tracking-wider text-blue-600">
-            Transparent Pricing
+            Plans and billing
           </h2>
-          <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
-            Simple plans that scale with your fleet size
+          <h3 className="text-balance text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            Subscription setup is not available
           </h3>
-          <p className="text-sm text-slate-600">Plan prices are a preview. Billing and trial activation are not configured.</p>
-
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <span className={`text-xs font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>
-              Monthly
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={billingCycle === 'yearly'}
-              aria-label="Annual billing preview"
-              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-xs font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-400'}`}>
-              Annual
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan) => {
-            const price = billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
-
-            return (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-6 flex flex-col justify-between transition-all ${
-                  plan.popular
-                    ? 'border-2 border-blue-600 bg-white shadow-xl shadow-blue-500/10'
-                    : 'border border-slate-200 bg-white shadow-xs'
-                }`}
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900 text-lg">{plan.name}</h4>
-                    {plan.popular && (
-                      <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
-                        Most Popular
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-slate-500">{plan.desc}</p>
-
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-900">${price}</span>
-                    <span className="text-xs text-slate-500 font-medium">/month billed {billingCycle}</span>
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-4 space-y-2.5 text-xs text-slate-700">
-                    {plan.features.map((feat, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectPlan(plan.name)}
-                    className={`w-full rounded-xl py-2.5 text-xs font-bold transition-all ${
-                      plan.popular
-                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
-                        : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
-                    }`}
-                  >
-                    Select plan (payments not configured)
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-600">
+            No payment provider, trial, or subscription is configured. Creating an account and workspace does not activate a paid plan or start a trial.
+          </p>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="bg-slate-50 py-16 px-4 border-t border-slate-200">
+      <section className="border-t border-slate-200 bg-slate-50 px-4 py-14 sm:py-16">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-2">
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-600">
               Frequently Asked Questions
             </h2>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <h3 className="text-balance text-2xl font-bold text-slate-900 sm:text-3xl">
               Clear answers for rental business owners
             </h3>
           </div>
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
-              <div key={idx} className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-1.5">
+              <div key={idx} className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
                 <h4 className="font-bold text-slate-900 text-sm">{faq.q}</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">{faq.a}</p>
               </div>
@@ -498,8 +309,8 @@ export const PublicWebsiteView: React.FC<PublicWebsiteViewProps> = ({
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 text-slate-400 py-12 px-4 text-xs border-t border-slate-800">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-slate-800 bg-slate-950 px-4 py-10 text-xs text-slate-400 sm:py-12">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
               <HardHat className="h-4 w-4" />

@@ -11,7 +11,8 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "lint": "tsc --noEmit",
     "test": "bun test",
-    "db:migrate:testing": "bun src/db/run-testing-migration.ts --config=src/db/drizzle.config.ts"
+    "db:migrate:testing": "bun src/db/run-testing-migration.ts --config=src/db/drizzle.config.ts",
+    "db:migrate:supabase-testing": "bun src/db/run-supabase-testing-migration.ts --config=src/db/supabase-testing.drizzle.config.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -25,7 +26,7 @@
     "drizzle-orm": "^0.45.4",
     "express": "^4.21.2",
     "express-rate-limit": "^8.2.1",
-    "firebase": "^13.2.0",
+    "firebase": "^13.3.0",
     "firebase-admin": "^14.5.0",
     "helmet": "^8.1.0",
     "jspdf": "^4.2.1",
@@ -39,15 +40,15 @@
     "vite": "^8.3.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "@types/express": "^4.17.21"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "@grpc/grpc-js": "^1.14.7"

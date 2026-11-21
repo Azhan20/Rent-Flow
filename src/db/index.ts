@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema.ts';
-import { createPostgresPoolOptions } from './postgres-config';
+import { createApplicationPoolOptions } from './postgres-config';
 
 declare global {
   var _postgresPool: Pool | undefined;
@@ -10,7 +10,7 @@ declare global {
 // Function to create or retrieve the connection pool using the object method
 export const createPool = () => {
   if (!global._postgresPool) {
-    global._postgresPool = new Pool(createPostgresPoolOptions(process.env));
+    global._postgresPool = new Pool(createApplicationPoolOptions(process.env));
 
     global._postgresPool.on('error', (err) => {
       console.error('Unexpected PostgreSQL pool error:', err.name);
