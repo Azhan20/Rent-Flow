@@ -85,26 +85,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs font-medium text-slate-600 shadow-2xs">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div className="grid w-full grid-cols-3 rounded-lg border border-slate-200 bg-white p-0.5 text-[10px] font-medium text-slate-600 shadow-2xs sm:flex sm:w-auto sm:text-xs">
             <button
               type="button"
               onClick={() => setDateFilter('30d')}
-              className={`rounded-md px-2.5 py-1 ${dateFilter === '30d' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
+              className={`min-h-9 rounded-md px-1.5 py-1 sm:px-2.5 ${dateFilter === '30d' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
             >
               Last 30 Days
             </button>
             <button
               type="button"
               onClick={() => setDateFilter('90d')}
-              className={`rounded-md px-2.5 py-1 ${dateFilter === '90d' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
+              className={`min-h-9 rounded-md px-1.5 py-1 sm:px-2.5 ${dateFilter === '90d' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
             >
               Last Quarter
             </button>
             <button
               type="button"
               onClick={() => setDateFilter('ytd')}
-              className={`rounded-md px-2.5 py-1 ${dateFilter === 'ytd' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
+              className={`min-h-9 rounded-md px-1.5 py-1 sm:px-2.5 ${dateFilter === 'ytd' ? 'bg-blue-50 text-blue-700 font-semibold' : 'hover:bg-slate-50'}`}
             >
               Year to Date
             </button>
@@ -113,7 +113,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <button
             type="button"
             onClick={onOpenNewBooking}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
+            className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             <span>New Booking</span>
@@ -122,7 +122,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 min-[400px]:grid-cols-2 md:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500">Fleet Utilization</span>
@@ -197,7 +197,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* AI Intelligence Banner */}
-      <div className="rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50/70 via-indigo-50/50 to-white p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+      <div className="flex flex-col justify-between gap-3 rounded-xl border border-purple-200 bg-purple-50/70 p-4 sm:flex-row sm:items-center">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-purple-600 p-2 text-white shadow-xs">
             <Sparkles className="h-4 w-4" />
@@ -251,7 +251,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               };
 
               return (
-                <div key={booking.id} className="py-3 flex items-center justify-between gap-4">
+                <div key={booking.id} className="flex flex-col items-start justify-between gap-2 py-3 sm:flex-row sm:items-center sm:gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-bold text-slate-900">
@@ -273,11 +273,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="text-right shrink-0">
+                  <div className="shrink-0 text-left sm:text-right">
                     <p className="text-xs font-bold text-slate-900">
                       ${booking.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-[11px] text-slate-500 flex items-center justify-end gap-1 mt-0.5">
+                    <p className="mt-0.5 flex items-center justify-start gap-1 text-[11px] text-slate-500 sm:justify-end">
                       <Calendar className="h-3 w-3" />
                       {booking.startDate} → {booking.endDate}
                     </p>

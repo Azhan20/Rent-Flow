@@ -10,7 +10,7 @@ import {
 
 const validEnvironment = {
   DATABASE_URL:
-    'postgresql://testing-user:synthetic-password@ep-proud-field-belh2xjm.c-9.us-east-2.aws.neon.tech:5432/neondb?sslmode=require',
+    'postgresql://testing-user:synthetic-password@ep-floral-dawn-be6dbzbp-pooler.c-9.us-east-2.aws.neon.tech:5432/neondb?sslmode=require',
   DATABASE_SSL: 'true',
 };
 
@@ -25,18 +25,21 @@ test('resolves the project .env path from the config URL, independent of the she
   assert.notEqual(envPath, resolve(process.cwd(), '.env'));
 });
 
-test('accepts the verified testing hostname and enables full TLS verification', () => {
+test('accepts only the confirmed rentflow-testing hostname and enables full TLS verification', () => {
   const target = validateTestingDatabaseTarget(validEnvironment);
 
-  assert.equal(target.host, 'ep-proud-field-belh2xjm.c-9.us-east-2.aws.neon.tech');
+  assert.equal(target.host, 'ep-floral-dawn-be6dbzbp-pooler.c-9.us-east-2.aws.neon.tech');
   assert.equal(target.database, 'neondb');
   assert.equal(target.ssl, 'verify-full');
   assert.equal(target.port, 5432);
 });
 
-test('rejects the former production-derived testing hostname and production hosts without echoing the URL', () => {
+test('rejects production, unknown, and non-exact hostnames without echoing the URL', () => {
   const unapprovedHosts = [
-    'ep-floral-dawn-be6dbzbp-pooler.c-9.us-east-2.aws.neon.tech',
+    'ep-bold-cloud-beiraa7e-pooler.c-9.us-east-2.aws.neon.tech',
+    'ep-unknown-branch-12345678-pooler.c-9.us-east-2.aws.neon.tech',
+    'ep-floral-dawn-be6dbzbp-pooler.c-9.us-east-2.aws.neon.tech.attacker.example',
+    'ep-proud-field-belh2xjm.c-9.us-east-2.aws.neon.tech',
     'ep-rentflow-production.c-9.us-east-2.aws.neon.tech',
     'production.example.net',
   ];

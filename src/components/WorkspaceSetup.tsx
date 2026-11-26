@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAuthenticatedApi, readApiError } from '../lib/api';
 import { WorkspaceOperations } from './WorkspaceOperations';
 import { usePageMetadata } from '../lib/pageMetadata';
+import { BillingSettings } from '../billing/BillingSettings';
 
 type Organization = { id: string; name: string; slug: string; currency: string; timezone: string; role: string };
 
@@ -25,6 +26,7 @@ export const WorkspaceSetup: React.FC<{ selectedPlan?: string; billingCycle?: 'm
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [createOrganizationOpen, setCreateOrganizationOpen] = useState(false);
+  const [billingOpen, setBillingOpen] = useState(false);
 
   const refresh = useCallback(async (preferredOrganizationId?: string) => {
     setLoading(true);
@@ -126,7 +128,8 @@ export const WorkspaceSetup: React.FC<{ selectedPlan?: string; billingCycle?: 'm
           {selectedPlan && <p className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-sm leading-5 text-blue-900">Selected plan: <strong>{selectedPlan}</strong> ({billingCycle}). Payment processing is not configured, so this selection does not start a trial or activate a subscription.</p>}
         </div>
         <div className="p-5 sm:p-8">
-          {loading ? <div role="status" className="flex min-h-40 items-center justify-center gap-3 text-sm text-slate-600"><LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />Loading account and workspace…</div> : <>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-base font-bold text-slate-900">Account setup</h2><p className="mt-1 text-sm text-slate-500">Billing applies to your account and all its organizations.</p></div><button type="button" onClick={() => setBillingOpen((open) => !open)} className={secondaryButton}>{billingOpen ? 'Back to workspace setup' : 'View billing and plans'}</button></div>
+          {billingOpen ? <BillingSettings authenticatedFetch={authenticatedFetch} /> : loading ? <div role="status" className="flex min-h-40 items-center justify-center gap-3 text-sm text-slate-600"><LoaderCircle className="h-5 w-5 animate-spin text-blue-600" />Loading account and workspace…</div> : <>
             {error && <p role="alert" className="mb-5 break-words rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p>}
             <div className="mb-5"><h2 className="text-base font-bold text-slate-900">Create your first organization</h2><p className="mt-1 text-sm leading-5 text-slate-500">This creates the organization and owner membership linked to your verified account.</p></div>
             {renderOrganizationForm()}

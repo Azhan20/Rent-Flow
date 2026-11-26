@@ -111,8 +111,8 @@ export const InvoicesView: React.FC = () => {
 
       {/* Invoices Table */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+        <div className="overflow-x-auto" role="region" aria-label="Invoices table" tabIndex={0}>
+          <table className="min-w-[980px] w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3">Invoice #</th>
@@ -210,7 +210,7 @@ export const InvoicesView: React.FC = () => {
       {/* Record Payment Modal */}
       {paymentModalInvoice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
             <div className="border-b border-slate-100 pb-3">
               <span className="font-mono text-xs font-bold text-emerald-600">
                 Record Payment Received

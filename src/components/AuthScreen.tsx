@@ -8,7 +8,7 @@ type Mode = 'login' | 'signup' | 'reset';
 
 export const AuthScreen: React.FC<{ selectedPlan?: string; initialMode?: Mode }> = ({ selectedPlan, initialMode = 'login' }) => {
   usePageMetadata('Sign in | RentFlow', false);
-  const { configured, user, signUp, signIn, signInWithGoogle, resetPassword, resendVerification, signOutUser } = useAuth();
+  const { configured, user, signUp, signIn, signInWithGoogle, resetPassword, resendVerification, refreshEmailVerificationStatus, signOutUser } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,12 +42,16 @@ export const AuthScreen: React.FC<{ selectedPlan?: string; initialMode?: Mode }>
       <section className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl sm:p-8" aria-labelledby="verify-title">
         <ShieldCheck className="mb-4 h-9 w-9 text-blue-600" />
         <h1 id="verify-title" className="text-2xl font-bold text-slate-900">Verify your email</h1>
-        <p className="mt-2 break-words text-sm text-slate-600">We sent a verification link to {user.email}. Verify your address, then sign in again.</p>
+        <p className="mt-2 break-words text-sm text-slate-600">We sent a verification link to {user.email}. After verifying, return to this tab; RentFlow will refresh your session and open your workspace automatically. If the link expired or was already used, request a fresh one.</p>
         {notice && <p role="status" className="mt-4 text-sm text-emerald-700">{notice}</p>}
         {error && <p role="alert" className="mt-4 text-sm text-rose-700">{error}</p>}
         <div className="mt-6 flex flex-col gap-3">
-          <button className="rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={busy} onClick={() => void run(resendVerification)}>Resend verification email</button>
-          <button className="rounded-lg border px-4 py-3 text-sm font-semibold text-slate-700" onClick={() => void signOutUser()}>Sign out</button>
+          <button type="button" className="rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={busy} onClick={() => void run(async () => { await resendVerification(); setNotice('A fresh verification email has been sent.'); })}>Resend verification email</button>
+          <button type="button" className="rounded-lg border px-4 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50" disabled={busy} onClick={() => void run(async () => {
+            const verified = await refreshEmailVerificationStatus();
+            if (!verified) setNotice('RentFlow has not received the verification yet. Open the latest email link, then return here.');
+          })}>I’ve verified my email</button>
+          <button type="button" className="rounded-lg border px-4 py-3 text-sm font-semibold text-slate-700 disabled:opacity-50" disabled={busy} onClick={() => void signOutUser()}>Sign out</button>
         </div>
       </section>
     </main>

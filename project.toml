@@ -1,0 +1,11 @@
+[[build.env]]
+name = "GOOGLE_NODEJS_VERSION"
+value = "24"
+
+[[build.env]]
+name = "GOOGLE_PACKAGE_MANAGER"
+value = "bun"
+
+[[build.env]]
+name = "GOOGLE_NODE_RUN_SCRIPTS"
+value = "build"

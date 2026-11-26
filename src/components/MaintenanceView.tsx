@@ -25,6 +25,7 @@ import {
   AlertSeverity 
 } from '../utils/predictiveMaintenance';
 import { calculateSixMonthMaintenanceForecast } from '../utils/maintenanceProjection';
+import { getCalendarDateInTimeZone } from '../utils/dateTime';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -38,7 +39,7 @@ import {
 } from 'recharts';
 
 export const MaintenanceView: React.FC = () => {
-  const { maintenanceOrders, equipmentList, bookings, createMaintenanceOrder, updateMaintenanceStatus } = useRentFlow();
+  const { currentOrg, maintenanceOrders, equipmentList, bookings, createMaintenanceOrder, updateMaintenanceStatus } = useRentFlow();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedAssetUnitId, setSelectedAssetUnitId] = useState('');
@@ -46,7 +47,7 @@ export const MaintenanceView: React.FC = () => {
   const [description, setDescription] = useState('');
   const [technician, setTechnician] = useState('Carlos Mendez (Lead Field Tech)');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('HIGH');
-  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
+  const [scheduledDate, setScheduledDate] = useState(() => getCalendarDateInTimeZone(currentOrg.timezone));
   const [costParts, setCostParts] = useState('250');
   const [costLabor, setCostLabor] = useState('200');
 
@@ -188,12 +189,12 @@ export const MaintenanceView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-              <Wrench className="h-6 w-6 text-amber-500" />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="flex min-w-0 items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <Wrench className="h-6 w-6 shrink-0 text-amber-500" />
               Maintenance & Predictive Telematics
             </h1>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+            <span className="flex shrink-0 items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600 dark:border-blue-800 dark:bg-blue-950/40">
               <Activity className="w-3 h-3 text-blue-500 animate-pulse" />
               Auto-Alerts Active
             </span>
@@ -209,7 +210,7 @@ export const MaintenanceView: React.FC = () => {
             if (allSerializedUnits[0]) setSelectedAssetUnitId(allSerializedUnits[0].unitId);
             setShowAddModal(true);
           }}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
           <span>New Work Order</span>
@@ -217,7 +218,7 @@ export const MaintenanceView: React.FC = () => {
       </div>
 
       {/* KPI Overview Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-rose-200 dark:border-rose-900/50 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">Overdue Service</span>
@@ -269,7 +270,7 @@ export const MaintenanceView: React.FC = () => {
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-slate-900">
             <button
               onClick={() => setAlertFilter('ACTION_REQUIRED')}
               className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
@@ -499,7 +500,7 @@ export const MaintenanceView: React.FC = () => {
         </div>
 
         {/* 4 Operations Planning Metric Pills */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 lg:grid-cols-4">
           <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/60">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">6-Mo Projected Services</span>
             <p className="text-xl font-black text-slate-900 dark:text-white mt-0.5">{sixMonthForecast.totalProjectedServices} Units</p>
@@ -652,8 +653,8 @@ export const MaintenanceView: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+        <div className="overflow-x-auto" role="region" aria-label="Maintenance work orders table" tabIndex={0}>
+          <table className="min-w-[1100px] w-full text-left text-xs text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-50 dark:bg-slate-900 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-700">
               <tr>
                 <th className="px-4 py-3">Order #</th>
@@ -735,7 +736,7 @@ export const MaintenanceView: React.FC = () => {
       {/* New Work Order Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-150">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-4 shadow-xl animate-in fade-in zoom-in-95 duration-150 dark:border-slate-700 dark:bg-slate-800 sm:p-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700 mb-4">
               <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                 <Wrench className="w-4 h-4 text-amber-500" />
@@ -744,7 +745,8 @@ export const MaintenanceView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                aria-label="Close maintenance work order dialog"
               >
                 ✕
               </button>
@@ -795,7 +797,7 @@ export const MaintenanceView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Assigned Technician
@@ -809,10 +811,11 @@ export const MaintenanceView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  <label htmlFor="maintenance-scheduled-date" className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Scheduled Date
                   </label>
                   <input
+                    id="maintenance-scheduled-date"
                     type="date"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
@@ -821,7 +824,7 @@ export const MaintenanceView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:grid-cols-3">
                 <div>
                   <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                     Priority

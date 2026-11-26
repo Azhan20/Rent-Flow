@@ -1,0 +1,74 @@
+# Local environment files and secrets
+.env
+.env.*
+.env-*
+**/.env
+**/.env.*
+**/.env-*
+secrets/**
+**/secrets/**
+**/*service-account*.json
+**/*credentials*.json
+**/*secret*.json
+
+# Private keys and local certificates
+**/*.key
+**/*.pem
+**/*.crt
+**/*.cer
+**/*.der
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.ppk
+**/id_rsa*
+**/id_ed25519*
+
+# Phase 2 snapshots and other security snapshot artifacts
+/security/*.json
+/security/**/*.json
+/security/**/snapshots/**
+
+# Test output and generated artifacts
+/coverage/
+**/coverage/**
+/test-results/
+**/test-results/**
+/playwright-report/
+**/playwright-report/**
+/.nyc_output/
+**/__snapshots__/**
+**/*.snap
+/*.png
+/*.jpg
+/*.jpeg
+
+# Git metadata, dependencies, generated output, and caches
+/.git/
+**/.git/**
+/node_modules/
+**/node_modules/**
+/dist/
+**/dist/**
+/.gmp_cache/
+**/.gmp_cache/**
+/.cache/
+**/.cache/**
+**/.vite/**
+**/.turbo/**
+**/.parcel-cache/**
+**/__pycache__/**
+**/.pytest_cache/**
+
+# Temporary files
+/tmp/
+/temp/
+**/tmp/**
+**/temp/**
+**/*.tmp
+**/*.temp
+**/*~
+**/.DS_Store
+**/Thumbs.db
+**/*.log

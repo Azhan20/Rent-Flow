@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  CreditCard,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
@@ -14,12 +15,14 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthenticatedApi, readApiError } from '../lib/api';
+import { formatInstantInTimeZone, getRentalTimeZone, parseDateTimeLocalInTimeZone } from '../utils/dateTime';
+import { BillingSettings } from '../billing/BillingSettings';
 
 type Equipment = { id: string; sku: string; name: string; dailyRate: string; weeklyRate: string; monthlyRate: string; depositAmount: string; totalUnits: number; active: boolean };
 type Customer = { id: string; name: string; email: string; phone: string | null };
 type Booking = { booking: { id: string; bookingNumber: string; startAt: string; endAt: string; status: string; subtotal: string; depositAmount: string }; item: { id: string } | null };
 type Organization = { id: string; name: string; currency: string; timezone: string; role: string };
-type Section = 'overview' | 'equipment' | 'customers' | 'bookings';
+type Section = 'overview' | 'equipment' | 'customers' | 'bookings' | 'billing';
 
 type WorkspaceOperationsProps = {
   organization: Organization;
@@ -35,6 +38,7 @@ const navigation: { id: Section; label: string; icon: typeof LayoutDashboard }[]
   { id: 'equipment', label: 'Equipment', icon: Package },
   { id: 'customers', label: 'Customers', icon: Users },
   { id: 'bookings', label: 'Bookings', icon: CalendarDays },
+  { id: 'billing', label: 'Billing', icon: CreditCard },
 ];
 
 const panel = 'min-w-0 rounded-2xl border border-slate-200/80 bg-white shadow-sm';
@@ -53,11 +57,8 @@ function formatMoney(currency: string, value: string | number) {
   }
 }
 
-function formatDate(value: string) {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
-    : value;
+function formatDate(value: string, timeZone: string) {
+  return formatInstantInTimeZone(value, timeZone);
 }
 
 function statusClasses(status: string) {
@@ -88,6 +89,7 @@ export const WorkspaceOperations: React.FC<WorkspaceOperationsProps> = ({
   const [equipmentForm, setEquipmentForm] = useState({ sku: '', name: '', dailyRate: '', weeklyRate: '', monthlyRate: '', depositAmount: '0', totalUnits: '1' });
   const [customerForm, setCustomerForm] = useState({ name: '', email: '', phone: '' });
   const [bookingForm, setBookingForm] = useState({ customerId: '', equipmentId: '', quantity: '1', startAt: '', endAt: '' });
+  const rentalTimeZone = getRentalTimeZone(organization.timezone);
 
   const orgPath = `/api/organizations/${organization.id}`;
   const refresh = useCallback(async () => {
@@ -155,6 +157,7 @@ export const WorkspaceOperations: React.FC<WorkspaceOperationsProps> = ({
     equipment: 'Manage rentable equipment and the rates used to price rental requests.',
     customers: 'Keep customer contact details ready for new rental requests.',
     bookings: 'Review rental requests with rates and availability checked by the server.',
+    billing: 'Review the account-level subscription and organization allowance.',
   };
 
   const renderNavigation = (mobile = false) => (
@@ -233,14 +236,16 @@ export const WorkspaceOperations: React.FC<WorkspaceOperationsProps> = ({
   ) : (
     <>
       <div className="space-y-3 lg:hidden">
-        {visibleBookings.map((booking) => <article key={booking.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><h3 className="break-all text-sm font-semibold text-slate-900">{booking.bookingNumber}</h3><StatusBadge status={booking.status} /></div><p className="mt-3 text-xs text-slate-500">{formatDate(booking.startAt)} <span aria-hidden="true">→</span> {formatDate(booking.endAt)}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm"><span className="text-slate-600">Rental <strong className="text-slate-900">{formatMoney(organization.currency, booking.subtotal)}</strong></span><span className="text-slate-600">Deposit <strong className="text-slate-900">{formatMoney(organization.currency, booking.depositAmount)}</strong></span></div></article>)}
+        {visibleBookings.map((booking) => <article key={booking.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><h3 className="break-all text-sm font-semibold text-slate-900">{booking.bookingNumber}</h3><StatusBadge status={booking.status} /></div><p className="mt-3 text-xs text-slate-500">{formatDate(booking.startAt, rentalTimeZone)} <span aria-hidden="true">→</span> {formatDate(booking.endAt, rentalTimeZone)}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm"><span className="text-slate-600">Rental <strong className="text-slate-900">{formatMoney(organization.currency, booking.subtotal)}</strong></span><span className="text-slate-600">Deposit <strong className="text-slate-900">{formatMoney(organization.currency, booking.depositAmount)}</strong></span></div></article>)}
       </div>
       <div className="hidden overflow-x-auto lg:block" role="region" aria-label="Rental requests" tabIndex={0}>
-        <table className="w-full min-w-[680px] text-left text-sm"><thead className="border-y border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3 font-semibold">Request</th><th className="px-4 py-3 font-semibold">Pickup</th><th className="px-4 py-3 font-semibold">Return</th><th className="px-4 py-3 font-semibold">Status</th><th className="px-4 py-3 font-semibold">Rental</th><th className="px-4 py-3 font-semibold">Deposit</th></tr></thead><tbody className="divide-y divide-slate-100">{visibleBookings.map((booking) => <tr key={booking.id} className="hover:bg-slate-50/80"><td className="max-w-[150px] break-all px-4 py-3.5 font-semibold text-slate-900">{booking.bookingNumber}</td><td className="min-w-[145px] px-4 py-3.5 text-slate-600">{formatDate(booking.startAt)}</td><td className="min-w-[145px] px-4 py-3.5 text-slate-600">{formatDate(booking.endAt)}</td><td className="px-4 py-3.5"><StatusBadge status={booking.status} /></td><td className="whitespace-nowrap px-4 py-3.5 tabular-nums text-slate-700">{formatMoney(organization.currency, booking.subtotal)}</td><td className="whitespace-nowrap px-4 py-3.5 tabular-nums text-slate-700">{formatMoney(organization.currency, booking.depositAmount)}</td></tr>)}</tbody></table>
+        <table className="w-full min-w-[680px] text-left text-sm"><thead className="border-y border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3 font-semibold">Request</th><th className="px-4 py-3 font-semibold">Pickup</th><th className="px-4 py-3 font-semibold">Return</th><th className="px-4 py-3 font-semibold">Status</th><th className="px-4 py-3 font-semibold">Rental</th><th className="px-4 py-3 font-semibold">Deposit</th></tr></thead><tbody className="divide-y divide-slate-100">{visibleBookings.map((booking) => <tr key={booking.id} className="hover:bg-slate-50/80"><td className="max-w-[150px] break-all px-4 py-3.5 font-semibold text-slate-900">{booking.bookingNumber}</td><td className="min-w-[145px] px-4 py-3.5 text-slate-600">{formatDate(booking.startAt, rentalTimeZone)}</td><td className="min-w-[145px] px-4 py-3.5 text-slate-600">{formatDate(booking.endAt, rentalTimeZone)}</td><td className="px-4 py-3.5"><StatusBadge status={booking.status} /></td><td className="whitespace-nowrap px-4 py-3.5 tabular-nums text-slate-700">{formatMoney(organization.currency, booking.subtotal)}</td><td className="whitespace-nowrap px-4 py-3.5 tabular-nums text-slate-700">{formatMoney(organization.currency, booking.depositAmount)}</td></tr>)}</tbody></table>
       </div>
     </>
   );
 
+  // Render these helpers directly below. Using them as JSX components would create a
+  // new component type on every parent render and remount controlled fields, dropping focus.
   const EquipmentForm = () => (
     <form onSubmit={(event) => void submit(event, 'equipment', { ...equipmentForm, dailyRate: Number(equipmentForm.dailyRate), weeklyRate: Number(equipmentForm.weeklyRate), monthlyRate: Number(equipmentForm.monthlyRate), depositAmount: Number(equipmentForm.depositAmount), totalUnits: Number(equipmentForm.totalUnits) }, () => setEquipmentForm({ sku: '', name: '', dailyRate: '', weeklyRate: '', monthlyRate: '', depositAmount: '0', totalUnits: '1' }))} className="grid min-w-0 grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
       <label className={label}>SKU<input required maxLength={80} value={equipmentForm.sku} onChange={(e) => setEquipmentForm({ ...equipmentForm, sku: e.target.value })} className={field} autoComplete="off" /></label>
@@ -266,20 +271,29 @@ export const WorkspaceOperations: React.FC<WorkspaceOperationsProps> = ({
   const BookingForm = () => (
     <form onSubmit={(event) => {
       event.preventDefault();
-      const start = new Date(bookingForm.startAt);
-      const end = new Date(bookingForm.endAt);
-      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
+      let start: Date;
+      let end: Date;
+      try {
+        start = parseDateTimeLocalInTimeZone(bookingForm.startAt, rentalTimeZone);
+        end = parseDateTimeLocalInTimeZone(bookingForm.endAt, rentalTimeZone);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Choose valid pickup and return times.');
+        setNotice('');
+        return;
+      }
+      if (end <= start) {
         setError('Return time must be after pickup time.');
         setNotice('');
         return;
       }
-      void submit(event, 'bookings', { customerId: bookingForm.customerId, startAt: start.toISOString(), endAt: end.toISOString(), items: [{ equipmentId: bookingForm.equipmentId, quantity: Number(bookingForm.quantity) }] }, () => setBookingForm({ ...bookingForm, customerId: '', equipmentId: '', quantity: '1' }));
+      setError('');
+      void submit(event, 'bookings', { customerId: bookingForm.customerId, startAt: start.toISOString(), endAt: end.toISOString(), items: [{ equipmentId: bookingForm.equipmentId, quantity: Number(bookingForm.quantity) }] }, () => setBookingForm((current) => ({ ...current, customerId: '', equipmentId: '', quantity: '1' })));
     }} className="grid min-w-0 grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
-      <label className={label}>Customer<select required value={bookingForm.customerId} onChange={(e) => setBookingForm({ ...bookingForm, customerId: e.target.value })} className={field}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
-      <label className={label}>Equipment<select required value={bookingForm.equipmentId} onChange={(e) => setBookingForm({ ...bookingForm, equipmentId: e.target.value })} className={field}><option value="">Select equipment</option>{equipment.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.totalUnits} units)</option>)}</select></label>
-      <label className={label}>Quantity<input required type="number" min="1" step="1" value={bookingForm.quantity} onChange={(e) => setBookingForm({ ...bookingForm, quantity: e.target.value })} className={field} /></label>
-      <label className={label}>Pickup date and time<input required type="datetime-local" value={bookingForm.startAt} onChange={(e) => setBookingForm({ ...bookingForm, startAt: e.target.value })} className={field} /></label>
-      <label className={label}>Return date and time<input required type="datetime-local" value={bookingForm.endAt} onChange={(e) => setBookingForm({ ...bookingForm, endAt: e.target.value })} className={field} /></label>
+      <label className={label}>Customer<select required value={bookingForm.customerId} onChange={(e) => setBookingForm((current) => ({ ...current, customerId: e.target.value }))} className={field}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label>
+      <label className={label}>Equipment<select required value={bookingForm.equipmentId} onChange={(e) => setBookingForm((current) => ({ ...current, equipmentId: e.target.value }))} className={field}><option value="">Select equipment</option>{equipment.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.totalUnits} units)</option>)}</select></label>
+      <label className={label}>Quantity<input required type="number" min="1" step="1" value={bookingForm.quantity} onChange={(e) => setBookingForm((current) => ({ ...current, quantity: e.target.value }))} className={field} /></label>
+      <label className={label}>Pickup date and time ({rentalTimeZone})<input required type="datetime-local" step="60" value={bookingForm.startAt} onChange={(e) => { setError(''); setBookingForm((current) => ({ ...current, startAt: e.target.value })); }} className={field} /></label>
+      <label className={label}>Return date and time ({rentalTimeZone})<input required type="datetime-local" step="60" min={bookingForm.startAt || undefined} value={bookingForm.endAt} onChange={(e) => { setError(''); setBookingForm((current) => ({ ...current, endAt: e.target.value })); }} className={field} /></label>
       <div className="flex flex-col items-start gap-3 sm:col-span-2 xl:col-span-5 sm:flex-row sm:items-center"><button disabled={saving || customers.length === 0 || equipment.length === 0} className={`${primaryButton} w-full sm:w-auto`}>{saving && <Spinner />}Create rental request</button><p className="text-xs leading-5 text-slate-500">Rates and available quantity are checked by the server. New requests remain pending review.</p></div>
     </form>
   );
@@ -299,13 +313,14 @@ export const WorkspaceOperations: React.FC<WorkspaceOperationsProps> = ({
       </div>
     );
     if (activeSection === 'equipment') return (
-      <div className="space-y-5"><section className={panel}><SectionHeading title="Equipment list" detail={`${equipment.length} ${equipment.length === 1 ? 'item' : 'items'} in this organization`} />{loading ? <LoadingState /> : <EquipmentRows />}</section><section className={panel}><SectionHeading title="Add equipment" detail="Enter the item details and rental rates." /><EquipmentForm /></section></div>
+      <div className="space-y-5"><section className={panel}><SectionHeading title="Equipment list" detail={`${equipment.length} ${equipment.length === 1 ? 'item' : 'items'} in this organization`} />{loading ? <LoadingState /> : <EquipmentRows />}</section><section className={panel}><SectionHeading title="Add equipment" detail="Enter the item details and rental rates." />{EquipmentForm()}</section></div>
     );
     if (activeSection === 'customers') return (
-      <div className="space-y-5"><section className={panel}><SectionHeading title="Customer list" detail={`${customers.length} ${customers.length === 1 ? 'customer' : 'customers'} in this organization`} />{loading ? <LoadingState /> : <CustomerRows />}</section><section className={panel}><SectionHeading title="Add a customer" detail="Add contact information for a rental customer." /><CustomerForm /></section></div>
+      <div className="space-y-5"><section className={panel}><SectionHeading title="Customer list" detail={`${customers.length} ${customers.length === 1 ? 'customer' : 'customers'} in this organization`} />{loading ? <LoadingState /> : <CustomerRows />}</section><section className={panel}><SectionHeading title="Add a customer" detail="Add contact information for a rental customer." />{CustomerForm()}</section></div>
     );
+    if (activeSection === 'billing') return <BillingSettings authenticatedFetch={authenticatedFetch} />;
     return (
-      <div className="space-y-5"><section className={panel}><SectionHeading title="Rental requests" detail={`${visibleBookings.length} ${visibleBookings.length === 1 ? 'request' : 'requests'} in this organization`} />{loading ? <LoadingState /> : <BookingRows />}</section><section className={panel}><SectionHeading title="Create a rental request" detail="Choose a customer, equipment, and rental window." />{customers.length === 0 || equipment.filter((item) => item.active).length === 0 ? <div className="m-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-600 sm:m-5"><p className="font-semibold text-slate-800">Add a customer and active equipment first</p><p className="mt-1">Rental requests require both records. Nothing will be added automatically.</p><div className="mt-3 flex flex-wrap gap-2">{customers.length === 0 && <button type="button" className={secondaryButton} onClick={() => chooseSection('customers')}>Go to customers</button>}{equipment.filter((item) => item.active).length === 0 && <button type="button" className={secondaryButton} onClick={() => chooseSection('equipment')}>Go to equipment</button>}</div></div> : <BookingForm />}</section></div>
+      <div className="space-y-5"><section className={panel}><SectionHeading title="Rental requests" detail={`${visibleBookings.length} ${visibleBookings.length === 1 ? 'request' : 'requests'} in this organization`} />{loading ? <LoadingState /> : <BookingRows />}</section><section className={panel}><SectionHeading title="Create a rental request" detail="Choose a customer, equipment, and rental window." />{customers.length === 0 || equipment.filter((item) => item.active).length === 0 ? <div className="m-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm text-slate-600 sm:m-5"><p className="font-semibold text-slate-800">Add a customer and active equipment first</p><p className="mt-1">Rental requests require both records. Nothing will be added automatically.</p><div className="mt-3 flex flex-wrap gap-2">{customers.length === 0 && <button type="button" className={secondaryButton} onClick={() => chooseSection('customers')}>Go to customers</button>}{equipment.filter((item) => item.active).length === 0 && <button type="button" className={secondaryButton} onClick={() => chooseSection('equipment')}>Go to equipment</button>}</div></div> : BookingForm()}</section></div>
     );
   };
 

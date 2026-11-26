@@ -11,6 +11,8 @@ export function getAuthErrorMessage(error: unknown, resetMode = false): string {
     case 'auth/wrong-password': return 'Email or password is incorrect.';
     case 'auth/email-already-in-use': return 'An account with this email already exists. Please sign in.';
     case 'auth/weak-password': return 'Use a password with at least 8 characters.';
+    case 'auth/expired-action-code':
+    case 'auth/invalid-action-code': return 'This verification link has expired or was already used. Request a new verification email.';
     case 'auth/popup-closed-by-user': return 'The Google sign-in window closed before authentication finished. Reopen it and complete sign-in.';
     case 'auth/popup-blocked': return 'Your browser blocked the Google sign-in window. Allow popups for this site and try again.';
     case 'auth/unauthorized-domain': return 'This site is not authorized for sign-in. Add its domain in Firebase Authentication settings.';

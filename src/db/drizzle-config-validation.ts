@@ -2,7 +2,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APPROVED_TESTING_DATABASE_HOSTS = new Set([
-  'ep-proud-field-belh2xjm.c-9.us-east-2.aws.neon.tech',
+  'ep-floral-dawn-be6dbzbp-pooler.c-9.us-east-2.aws.neon.tech',
 ]);
 const TESTING_DATABASE_NAME = 'neondb';
 

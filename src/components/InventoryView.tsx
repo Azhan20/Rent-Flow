@@ -155,7 +155,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           <button
             type="button"
             onClick={onOpenCsvImport}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <FileSpreadsheet className="h-3.5 w-3.5 text-slate-500" />
             <span>CSV Import</span>
@@ -164,7 +164,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           <button
             type="button"
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <Download className="h-3.5 w-3.5 text-slate-500" />
             <span>Export Fleet</span>
@@ -173,7 +173,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <Plus className="h-4 w-4" />
             <span>Add Equipment</span>
@@ -194,11 +194,11 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-hidden"
+            className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-hidden sm:w-auto"
           >
             <option value="all">All Categories</option>
             {categories.map((c) => (
@@ -211,7 +211,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-hidden"
+            className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-hidden sm:w-auto"
           >
             <option value="all">All Statuses</option>
             <option value="AVAILABLE">Available</option>
@@ -377,7 +377,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       {/* Equipment Specs Drawer/Modal */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="font-mono text-xs font-semibold text-blue-600">
@@ -399,7 +399,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                 Technical Specifications
               </h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 gap-2 text-xs min-[400px]:grid-cols-2">
                 {Object.entries(selectedItem.specifications).map(([key, val]) => (
                   <div key={key} className="rounded-md bg-white p-2 border border-slate-200">
                     <span className="text-[11px] text-slate-400 block">{key}</span>
@@ -456,7 +456,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
       {/* Add Equipment Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Add New Equipment to Fleet</h3>
@@ -472,8 +472,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
             </div>
 
             <form onSubmit={handleCreateEquipment} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
                     Equipment / Machine Name *
                   </label>
@@ -518,7 +518,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   </select>
                 </div>
 
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
                     Make & Model
                   </label>
@@ -535,7 +535,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               {/* Rates */}
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
                 <span className="text-xs font-bold text-slate-800 block">Rental Rate Card & Deposit</span>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <div>
                     <label className="text-[11px] text-slate-500 block">Daily ($)</label>
                     <input
@@ -580,7 +580,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
               </div>
 
               {/* Inventory Type */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">
                     Asset Type

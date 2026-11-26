@@ -90,16 +90,18 @@ function validateSupabaseTarget(
   }
 
   let user: string;
-  let password: string;
-  try {
-    user = decodeURIComponent(parsedUrl.username);
-    password = decodeURIComponent(parsedUrl.password);
-  } catch {
-    throw new Error(`${connectionVariable} contains invalid encoded credentials.`);
-  }
-  if (user !== expectedUser || !password) {
-    throw new Error(`${connectionVariable} must use the ${expectedLoginDescription}.`);
-  }
+let password: string;
+
+try {
+  user = decodeURIComponent(parsedUrl.username);
+  password = decodeURIComponent(parsedUrl.password);
+} catch {
+  throw new Error(`${connectionVariable} contains invalid encoded credentials.`);
+}
+
+if (user !== expectedUser || !password) {
+  throw new Error(`${connectionVariable} must use the ${expectedLoginDescription}.`);
+}
 
   if (!certificatePath || !isAbsolute(certificatePath)) {
     throw new Error('SUPABASE_TEST_CA_CERT must be an absolute path to the Supabase project CA certificate.');

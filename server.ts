@@ -4,12 +4,17 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { GoogleGenAI } from '@google/genai';
 import { initializeApp, cert, applicationDefault, getApps } from 'firebase-admin/app';
 import { getAuth, type DecodedIdToken } from 'firebase-admin/auth';
-import { and, eq, gt, inArray, lt, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, gt, inArray, lt, sql } from 'drizzle-orm';
 import { acquireBookingAvailabilityLocks, requestedEquipmentIsTenantScoped } from './src/db/booking-advisory-locks.ts';
 import dotenv from 'dotenv';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { isRequestOriginAllowed } from './src/lib/request-origin.ts';
+import { safeDatabaseCode, safeDatabaseErrorClass } from './src/lib/safe-database-code.ts';
+import { probeDatabaseReadiness } from './src/db/readiness.ts';
+import { buildExplicitInsertManyQuery, buildExplicitInsertQuery, tableReturningColumns } from './src/db/explicit-insert.ts';
+import { BASE_CURRENCY, PLAN_CATALOG, PLAN_CATALOG_VERSION, PLAN_IDENTIFIERS } from './src/billing/plan-catalog.ts';
 
 dotenv.config();
 
@@ -85,9 +90,22 @@ const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS || (isProduction ? '' : 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173'))
     .split(',').map((origin) => origin.trim()).filter(Boolean),
 );
+function getRequestOrigin(req: Request): string | undefined {
+  const host = req.header('host');
+  if (!host) return undefined;
+  try {
+    return new URL(`${req.protocol}://${host}`).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 app.use((req, res, next) => {
   const origin = req.header('origin');
-  if (origin && !allowedOrigins.has(origin)) return apiError(res, 403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.');
+  if (!isRequestOriginAllowed(origin, getRequestOrigin(req), allowedOrigins)) {
+    console.warn(JSON.stringify({ requestId: res.locals.requestId, route: 'origin.authorization', outcome: 'denied' }));
+    return apiError(res, 403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.');
+  }
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
@@ -207,10 +225,48 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Process health is separate from dependency readiness. This uses the exact
+// application pool and runs only a fixed read-only statement.
+app.get('/api/ready', async (_req, res) => {
+  try {
+    const { db } = await import('./src/db/index.ts');
+    await probeDatabaseReadiness((statement) => db.execute(sql.raw(statement)));
+    res.json({ status: 'ready', dependencies: { database: 'ok' } });
+  } catch (err) {
+    const errorName = (err as { name?: unknown } | null)?.name;
+    console.error(JSON.stringify({
+      requestId: res.locals.requestId,
+      route: 'readiness.database',
+      errorType: typeof errorName === 'string' && /^[A-Za-z]+Error$/.test(errorName) ? errorName : 'Error',
+      ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}),
+    }));
+    apiError(res, 503, 'DATABASE_NOT_READY', 'The database is temporarily unavailable.');
+  }
+});
+
 // Browser Maps key only. It MUST be restricted by HTTP referrer + Maps JS API
 // in Google Cloud Console. Never fall back to a server-side key here.
 app.get('/api/config/maps', (_req, res) => {
   res.json({ apiKey: process.env.VITE_GOOGLE_MAPS_API_KEY || '', mapId: process.env.GOOGLE_MAPS_MAP_ID || '' });
+});
+
+app.get('/api/billing/plans', (_req, res) => {
+  res.json({
+    catalogVersion: PLAN_CATALOG_VERSION,
+    currency: BASE_CURRENCY,
+    plans: PLAN_IDENTIFIERS.map((id) => {
+      const plan = PLAN_CATALOG[id];
+      return {
+        id: plan.id,
+        name: plan.displayName,
+        availability: plan.availability,
+        prices: plan.prices,
+        limits: plan.limits,
+      };
+    }),
+    trialDays: 14,
+    trialRequiresVerifiedPaymentMethod: true,
+  });
 });
 
 /* -------------------------------------------------------------------------- */
@@ -241,9 +297,11 @@ function requireOrganizationAccess(write = false) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const organizationId = req.params.organizationId;
     if (!organizationId || !UUID_PATTERN.test(organizationId)) return apiError(res, 404, 'NOT_FOUND', 'Organization not found.');
+    let stage = 'firebase_user_sync';
     try {
       const { db, record } = await findOrCreateUser(res.locals.user as DecodedIdToken);
       const { memberships, organizations } = await import('./src/db/schema.ts');
+      stage = 'active_membership_lookup';
       const [membership] = await db.select({ role: memberships.role })
         .from(memberships).innerJoin(organizations, eq(memberships.organizationId, organizations.id))
         .where(and(eq(memberships.organizationId, organizationId), eq(memberships.userId, record.id), eq(memberships.status, 'ACTIVE'), eq(organizations.status, 'ACTIVE'))).limit(1);
@@ -252,7 +310,16 @@ function requireOrganizationAccess(write = false) {
       res.locals.organizationAccess = { organizationId, userId: record.id, role: membership.role };
       next();
     } catch (err: any) {
-      console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'organization.authorization', errorType: err?.name ?? 'Error' }));
+      const databaseCode = safeDatabaseCode(err);
+      console.error(JSON.stringify({
+        requestId: res.locals.requestId,
+        route: 'organization.authorization',
+        method: req.method,
+        routePattern: req.route?.path ?? 'unknown',
+        stage,
+        errorType: typeof err?.name === 'string' && /^[A-Za-z]+Error$/.test(err.name) ? err.name : 'Error',
+        ...(databaseCode ? { databaseCode } : {}),
+      }));
       apiError(res, 503, 'AUTHORIZATION_UNAVAILABLE', 'Organization access could not be verified.');
     }
   };
@@ -417,7 +484,7 @@ app.get('/api/organizations/:organizationId/equipment', requireAuth, requireVeri
     const rows = await db.select().from(equipment).where(eq(equipment.organizationId, res.locals.organizationAccess.organizationId)).orderBy(equipment.name);
     res.json({ equipment: rows });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'equipment.list', errorType: err?.name ?? 'Error' }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'equipment.list', errorType: err?.name ?? 'Error', ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'DB_UNAVAILABLE', 'Equipment is temporarily unavailable.');
   }
 });
@@ -425,23 +492,38 @@ app.get('/api/organizations/:organizationId/equipment', requireAuth, requireVeri
 app.post('/api/organizations/:organizationId/equipment', requireAuth, requireVerifiedEmail, requireOrganizationAccess(true), limiter(30), async (req, res) => {
   const input = parseEquipmentCreateInput(req.body);
   if (!input) return apiError(res, 400, 'INVALID_INPUT', 'Equipment fields, rates, inventory count, or specifications are invalid.');
+  let failureStage = 'database_pool_import';
   try {
     const { db } = await import('./src/db/index.ts');
+    failureStage = 'database_schema_import';
     const access = res.locals.organizationAccess;
     const { equipment, auditLogs } = await import('./src/db/schema.ts');
+    failureStage = 'transaction_start';
     const created = await db.transaction(async (tx) => {
-      const [item] = await tx.insert(equipment).values({
-        organizationId: access.organizationId, sku: input.sku, name: input.name,
-        description: input.description, categoryId: input.categoryId,
-        dailyRate: String(input.dailyRate), weeklyRate: String(input.weeklyRate), monthlyRate: String(input.monthlyRate),
-        depositAmount: String(input.depositAmount), totalUnits: input.totalUnits, specifications: input.specifications,
-      }).returning();
+      failureStage = 'equipment_insert';
+      const inserted = await tx.execute(buildExplicitInsertQuery(equipment, [
+        { column: equipment.organizationId, value: access.organizationId },
+        { column: equipment.sku, value: input.sku },
+        { column: equipment.name, value: input.name },
+        { column: equipment.description, value: input.description },
+        { column: equipment.categoryId, value: input.categoryId },
+        { column: equipment.dailyRate, value: String(input.dailyRate) },
+        { column: equipment.weeklyRate, value: String(input.weeklyRate) },
+        { column: equipment.monthlyRate, value: String(input.monthlyRate) },
+        { column: equipment.depositAmount, value: String(input.depositAmount) },
+        { column: equipment.totalUnits, value: input.totalUnits },
+        { column: equipment.specifications, value: input.specifications },
+      ], tableReturningColumns(getTableColumns(equipment))));
+      const [item] = inserted.rows as (typeof equipment.$inferSelect)[];
+      if (!item) throw new Error('Equipment insert returned no row.');
+      failureStage = 'audit_log_insert';
       await tx.insert(auditLogs).values({ organizationId: access.organizationId, actorUserId: access.userId, action: 'EQUIPMENT_CREATED', subjectType: 'equipment', subjectId: item.id, requestId: res.locals.requestId, metadata: { sku: item.sku } });
+      failureStage = 'transaction_commit';
       return item;
     });
     res.status(201).json({ equipment: created });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'equipment.create', errorType: err?.name ?? 'Error', constraint: err?.constraint }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'equipment.create', method: req.method, routePattern: req.route?.path ?? 'unknown', stage: failureStage, errorClass: safeDatabaseErrorClass(err), ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, err?.code === '23505' ? 409 : err?.code === '23503' ? 400 : 503, err?.code === '23505' ? 'SKU_IN_USE' : err?.code === '23503' ? 'INVALID_CATEGORY' : 'DB_UNAVAILABLE', err?.code === '23505' ? 'That SKU is already used in this organization.' : err?.code === '23503' ? 'The selected category is invalid.' : 'Equipment could not be saved.');
   }
 });
@@ -453,7 +535,7 @@ app.get('/api/organizations/:organizationId/customers', requireAuth, requireVeri
     const rows = await db.select().from(customers).where(eq(customers.organizationId, res.locals.organizationAccess.organizationId)).orderBy(customers.name);
     res.json({ customers: rows });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'customers.list', errorType: err?.name ?? 'Error' }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'customers.list', errorType: err?.name ?? 'Error', ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'DB_UNAVAILABLE', 'Customers are temporarily unavailable.');
   }
 });
@@ -461,22 +543,34 @@ app.get('/api/organizations/:organizationId/customers', requireAuth, requireVeri
 app.post('/api/organizations/:organizationId/customers', requireAuth, requireVerifiedEmail, requireOrganizationAccess(true), limiter(30), async (req, res) => {
   const input = parseCustomerCreateInput(req.body);
   if (!input) return apiError(res, 400, 'INVALID_INPUT', 'Customer fields are invalid; provide a name and valid email address.');
+  let failureStage = 'database_pool_import';
   try {
     const { db } = await import('./src/db/index.ts');
     const access = res.locals.organizationAccess;
+    failureStage = 'database_schema_import';
     const { customers, auditLogs } = await import('./src/db/schema.ts');
+    failureStage = 'transaction_start';
     const created = await db.transaction(async (tx) => {
-      const [customer] = await tx.insert(customers).values({
-        organizationId: access.organizationId, name: input.name, email: input.email,
-        companyName: input.companyName, phone: input.phone,
-        billingAddress: input.billingAddress, notes: input.notes,
-      }).returning();
+      failureStage = 'customer_insert';
+      const inserted = await tx.execute(buildExplicitInsertQuery(customers, [
+        { column: customers.organizationId, value: access.organizationId },
+        { column: customers.name, value: input.name },
+        { column: customers.companyName, value: input.companyName },
+        { column: customers.email, value: input.email },
+        { column: customers.phone, value: input.phone },
+        { column: customers.billingAddress, value: input.billingAddress },
+        { column: customers.notes, value: input.notes },
+      ], tableReturningColumns(getTableColumns(customers))));
+      const [customer] = inserted.rows as (typeof customers.$inferSelect)[];
+      if (!customer) throw new Error('Customer insert returned no row.');
+      failureStage = 'audit_log_insert';
       await tx.insert(auditLogs).values({ organizationId: access.organizationId, actorUserId: access.userId, action: 'CUSTOMER_CREATED', subjectType: 'customer', subjectId: customer.id, requestId: res.locals.requestId });
+      failureStage = 'transaction_commit';
       return customer;
     });
     res.status(201).json({ customer: created });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'customers.create', errorType: err?.name ?? 'Error' }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'customers.create', method: req.method, routePattern: req.route?.path ?? 'unknown', stage: failureStage, errorClass: safeDatabaseErrorClass(err), ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'DB_UNAVAILABLE', 'Customer could not be saved.');
   }
 });
@@ -488,7 +582,7 @@ app.get('/api/organizations/:organizationId/bookings', requireAuth, requireVerif
     const rows = await db.select({ booking: bookings, item: bookingItems }).from(bookings).leftJoin(bookingItems, and(eq(bookingItems.bookingId, bookings.id), eq(bookingItems.organizationId, bookings.organizationId))).where(eq(bookings.organizationId, res.locals.organizationAccess.organizationId)).orderBy(bookings.startAt);
     res.json({ bookings: rows });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'bookings.list', errorType: err?.name ?? 'Error' }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'bookings.list', errorType: err?.name ?? 'Error', ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'DB_UNAVAILABLE', 'Bookings are temporarily unavailable.');
   }
 });
@@ -501,24 +595,31 @@ app.post('/api/organizations/:organizationId/bookings', requireAuth, requireVeri
   if (days > 3650) return apiError(res, 400, 'INVALID_INPUT', 'Rental duration is too long.');
   const lines = input.items;
   const access = res.locals.organizationAccess;
+  let failureStage = 'database_pool_import';
   try {
     const { db } = await import('./src/db/index.ts');
+    failureStage = 'database_schema_import';
     const { bookings, bookingItems, equipment, customers, auditLogs } = await import('./src/db/schema.ts');
+    failureStage = 'transaction_start';
     const result = await db.transaction(async (tx) => {
       // Transaction-scoped locks serialize competing booking requests across
       // all server processes without granting UPDATE on equipment rows.
+      failureStage = 'availability_lock';
       await acquireBookingAvailabilityLocks(tx, access.organizationId, lines.map((line) => line.equipmentId));
 
+      failureStage = 'customer_lookup';
       const [customer] = await tx.select({ id: customers.id }).from(customers).where(and(eq(customers.id, customerId), eq(customers.organizationId, access.organizationId))).limit(1);
       if (!customer) throw Object.assign(new Error('CUSTOMER_NOT_FOUND'), { code: 'CUSTOMER_NOT_FOUND' });
 
       // Recheck ownership and active status after acquiring the booking locks.
+      failureStage = 'equipment_lookup';
       const equipmentRows = await tx.select().from(equipment).where(and(eq(equipment.organizationId, access.organizationId), inArray(equipment.id, lines.map((line) => line.equipmentId)), eq(equipment.active, true))).orderBy(equipment.id);
       if (!requestedEquipmentIsTenantScoped(access.organizationId, lines.map((line) => line.equipmentId), equipmentRows)) {
         throw Object.assign(new Error('EQUIPMENT_NOT_FOUND'), { code: 'EQUIPMENT_NOT_FOUND' });
       }
       const requestedEnd = endAt;
       const requestedStart = startAt;
+      failureStage = 'availability_lookup';
       const reserved = await tx.select({ equipmentId: bookingItems.equipmentId, quantity: sql<number>`sum(${bookingItems.quantity})`.mapWith(Number) })
         .from(bookingItems).innerJoin(bookings, and(eq(bookingItems.bookingId, bookings.id), eq(bookingItems.organizationId, bookings.organizationId)))
         .where(and(eq(bookings.organizationId, access.organizationId), inArray(bookingItems.equipmentId, lines.map((line) => line.equipmentId)), lt(bookings.startAt, requestedEnd), gt(bookings.endAt, requestedStart), inArray(bookings.status, BOOKING_HOLD_STATUSES)))
@@ -537,9 +638,32 @@ app.post('/api/organizations/:organizationId/bookings', requireAuth, requireVeri
       const depositAmount = priced.reduce((total, item) => total + item.deposit, 0);
       if (!Number.isSafeInteger(subtotal) || !Number.isSafeInteger(depositAmount)) throw Object.assign(new Error('INVALID_TOTAL'), { code: 'INVALID_TOTAL' });
       const bookingNumber = `BK-${new Date().getUTCFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`;
-      const [booking] = await tx.insert(bookings).values({ organizationId: access.organizationId, customerId: customer.id, bookingNumber, startAt, endAt, status: 'REQUEST', subtotal: (subtotal / 100).toFixed(2), depositAmount: (depositAmount / 100).toFixed(2), taxAmount: '0', deliveryFee: '0' }).returning();
-      await tx.insert(bookingItems).values(priced.map((item) => ({ organizationId: access.organizationId, bookingId: booking.id, equipmentId: item.equipmentId, quantity: item.quantity, rateApplied: (item.rate / 100).toFixed(2) })));
+      failureStage = 'booking_insert';
+      const bookingResult = await tx.execute(buildExplicitInsertQuery(bookings, [
+        { column: bookings.organizationId, value: access.organizationId },
+        { column: bookings.customerId, value: customer.id },
+        { column: bookings.bookingNumber, value: bookingNumber },
+        { column: bookings.startAt, value: startAt },
+        { column: bookings.endAt, value: endAt },
+        { column: bookings.status, value: 'REQUEST' },
+        { column: bookings.subtotal, value: (subtotal / 100).toFixed(2) },
+        { column: bookings.taxAmount, value: '0' },
+        { column: bookings.deliveryFee, value: '0' },
+        { column: bookings.depositAmount, value: (depositAmount / 100).toFixed(2) },
+      ], tableReturningColumns(getTableColumns(bookings))));
+      const [booking] = bookingResult.rows as (typeof bookings.$inferSelect)[];
+      if (!booking) throw new Error('Booking insert returned no row.');
+      failureStage = 'booking_items_insert';
+      await tx.execute(buildExplicitInsertManyQuery(bookingItems, priced.map((item) => [
+          { column: bookingItems.organizationId, value: access.organizationId },
+          { column: bookingItems.bookingId, value: booking.id },
+          { column: bookingItems.equipmentId, value: item.equipmentId },
+          { column: bookingItems.quantity, value: item.quantity },
+          { column: bookingItems.rateApplied, value: (item.rate / 100).toFixed(2) },
+        ])));
+      failureStage = 'audit_log_insert';
       await tx.insert(auditLogs).values({ organizationId: access.organizationId, actorUserId: access.userId, action: 'BOOKING_CREATED', subjectType: 'booking', subjectId: booking.id, requestId: res.locals.requestId, metadata: { itemCount: priced.length, rentalDays: days } });
+      failureStage = 'transaction_commit';
       return booking;
     });
     res.status(201).json({ booking: result });
@@ -549,8 +673,86 @@ app.post('/api/organizations/:organizationId/bookings', requireAuth, requireVeri
     if (err?.code === 'NOT_AVAILABLE') return apiError(res, 409, 'EQUIPMENT_UNAVAILABLE', 'Some requested equipment is unavailable for these dates.');
     if (err?.code === 'INVALID_RATE') return apiError(res, 409, 'INVALID_RATE', 'Equipment pricing is invalid.');
     if (err?.code === 'INVALID_TOTAL') return apiError(res, 400, 'INVALID_TOTAL', 'The requested rental total exceeds the supported range.');
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'bookings.create', errorType: err?.name ?? 'Error', code: err?.code }));
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'bookings.create', method: req.method, routePattern: req.route?.path ?? 'unknown', stage: failureStage, errorClass: safeDatabaseErrorClass(err), ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'BOOKING_FAILED', 'Booking could not be created.');
+  }
+});
+
+app.get('/api/billing/account', requireAuth, requireVerifiedEmail, requireActiveUser, async (_req, res) => {
+  try {
+    const [{ db }, { getBillingOverview }] = await Promise.all([
+      import('./src/db/index.ts'),
+      import('./src/billing/service.ts'),
+    ]);
+    const overview = await getBillingOverview(db, res.locals.user as DecodedIdToken);
+    const history = overview.subscriptionHistory.map((subscription) => {
+      const snapshot = subscription.entitlementSnapshot as { limits?: { organizations?: unknown } } | null;
+      const organizationLimit = subscription.status === 'TRIALING'
+        ? 1
+        : typeof snapshot?.limits?.organizations === 'number' ? snapshot.limits.organizations : null;
+      return {
+        planIdentifier: subscription.planIdentifier,
+        billingInterval: subscription.billingInterval,
+        status: subscription.status,
+        isCurrent: subscription.isCurrent,
+        trialStartedAt: subscription.trialStartedAt,
+        trialEndsAt: subscription.trialEndsAt,
+        currentPeriodStartsAt: subscription.currentPeriodStartsAt,
+        currentPeriodEndsAt: subscription.currentPeriodEndsAt,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        cancellationRequestedAt: subscription.cancellationRequestedAt,
+        cancelledAt: subscription.cancelledAt,
+        organizationLimit,
+      };
+    });
+    const current = history.find((subscription) => subscription.isCurrent) ?? null;
+    res.json({
+      account: overview.account ? {
+        status: overview.account.status,
+        trialEligibility: overview.account.trialEligibility,
+        trialEligibilityCheckedAt: overview.account.trialEligibilityCheckedAt,
+        trialConsumedAt: overview.account.trialConsumedAt,
+      } : null,
+      currentSubscription: current,
+      subscriptionHistory: history,
+      subscriptionEvents: overview.subscriptionEvents,
+      organizations: {
+        linkedCount: overview.linkedOrganizationCount,
+        limit: current?.organizationLimit ?? null,
+      },
+      checkoutAvailable: false,
+    });
+  } catch (err: unknown) {
+    const name = (err as { name?: unknown } | null)?.name;
+    console.error(JSON.stringify({
+      requestId: res.locals.requestId,
+      route: 'billing.account.read',
+      errorType: typeof name === 'string' && /^[A-Za-z]+Error$/.test(name) ? name : 'Error',
+      errorClass: safeDatabaseErrorClass(err),
+      ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}),
+    }));
+    apiError(res, 503, 'BILLING_UNAVAILABLE', 'Billing account information is temporarily unavailable.');
+  }
+});
+
+app.post('/api/billing/account', requireAuth, requireVerifiedEmail, requireActiveUser, limiter(5), async (_req, res) => {
+  try {
+    const [{ db }, { createBillingAccount }] = await Promise.all([
+      import('./src/db/index.ts'),
+      import('./src/billing/service.ts'),
+    ]);
+    const account = await createBillingAccount(db, res.locals.user as DecodedIdToken);
+    res.status(200).json({ account: { status: account.status, trialEligibility: account.trialEligibility } });
+  } catch (err: unknown) {
+    const name = (err as { name?: unknown } | null)?.name;
+    console.error(JSON.stringify({
+      requestId: res.locals.requestId,
+      route: 'billing.account.create',
+      errorType: typeof name === 'string' && /^[A-Za-z]+Error$/.test(name) ? name : 'Error',
+      errorClass: safeDatabaseErrorClass(err),
+      ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}),
+    }));
+    apiError(res, 503, 'BILLING_UNAVAILABLE', 'Billing account setup is temporarily unavailable.');
   }
 });
 
@@ -564,7 +766,7 @@ app.get('/api/me', requireAuth, requireVerifiedEmail, async (_req, res) => {
     res.json({ user: record, organizations: orgs });
   } catch (err: any) {
     const status = err?.status === 403 ? 403 : 503;
-    if (status === 503) console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'me', errorType: err?.name ?? 'Error' }));
+    if (status === 503) console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'me', errorType: err?.name ?? 'Error', ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, status, status === 403 ? 'ACCOUNT_UNAVAILABLE' : 'DB_UNAVAILABLE', status === 403 ? 'A verified account email is required.' : 'Account data is temporarily unavailable.');
   }
 });
@@ -592,12 +794,18 @@ app.post('/api/organizations', requireAuth, requireVerifiedEmail, limiter(5), as
         timezone: organizations.timezone,
       });
       await tx.insert(memberships).values({ organizationId: created.id, userId: record.id, role: 'ORG_OWNER', status: 'ACTIVE' });
+      const { linkOwnedOrganizationWithinCatalogLimit } = await import('./src/billing/service.ts');
+      await linkOwnedOrganizationWithinCatalogLimit(tx, token, created.id);
       await tx.insert(auditLogs).values({ organizationId: created.id, actorUserId: record.id, action: 'ORGANIZATION_CREATED', requestId: res.locals.requestId, metadata: { slug: created.slug } });
       return created;
     });
     res.status(201).json({ organization: { id: organization.id, name: organization.name, slug: organization.slug, currency: organization.currency, timezone: organization.timezone, role: 'ORG_OWNER' } });
   } catch (err: any) {
-    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'organizations.create', errorType: err?.name ?? 'Error' }));
+    if (err?.code === 'ORGANIZATION_LIMIT_REACHED') return apiError(res, 409, 'ORGANIZATION_LIMIT_REACHED', 'Your account has reached its organization limit. Review your plan to add another organization.');
+    if (err?.code === 'BILLING_SUBSCRIPTION_REQUIRED' || err?.code === 'BILLING_ACCOUNT_NOT_FOUND') return apiError(res, 402, 'BILLING_SUBSCRIPTION_REQUIRED', 'A verified trial or active subscription is required before creating an organization.');
+    if (err?.code === 'BILLING_OWNER_REQUIRED' || err?.code === 'ORGANIZATION_OWNERSHIP_REQUIRED') return apiError(res, 403, 'BILLING_OWNER_REQUIRED', 'The authenticated account must own this organization.');
+    if (err?.code === 'PLAN_ENTITLEMENTS_UNCONFIGURED') return apiError(res, 503, 'BILLING_UNAVAILABLE', 'Organization plan limits could not be verified.');
+    console.error(JSON.stringify({ requestId: res.locals.requestId, route: 'organizations.create', errorType: err?.name ?? 'Error', ...(safeDatabaseCode(err) ? { databaseCode: safeDatabaseCode(err) } : {}) }));
     apiError(res, 503, 'ORG_CREATE_FAILED', 'Organization setup is temporarily unavailable.');
   }
 });

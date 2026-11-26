@@ -15,6 +15,7 @@ import {
 import { useRentFlow } from '../context/RentFlowContext';
 import { calculateRentalCost } from '../utils/pricing';
 import { isSerializedAssetAvailable, calculateBulkAvailability } from '../utils/availability';
+import { addCalendarDays, getCalendarDateInTimeZone, getRentalTimeZone, isValidDateRange } from '../utils/dateTime';
 import { BookingItem } from '../types';
 
 interface NewBookingModalProps {
@@ -37,16 +38,15 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
     createBooking,
   } = useRentFlow();
 
-  // Tomorrow as default start, +3 days as end
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultStart = tomorrow.toISOString().split('T')[0];
-  const inThreeDays = new Date();
-  inThreeDays.setDate(inThreeDays.getDate() + 4);
-  const defaultEnd = inThreeDays.toISOString().split('T')[0];
+  // Date-only rental values use the organization's calendar, not a UTC timestamp.
+  const rentalTimeZone = getRentalTimeZone(currentOrg.timezone);
+  const today = getCalendarDateInTimeZone(rentalTimeZone);
+  const defaultStart = addCalendarDays(today, 1);
+  const defaultEnd = addCalendarDays(today, 4);
 
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(defaultEnd);
+  const [dateRangeError, setDateRangeError] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState(customers[0]?.id || '');
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(preSelectedEquipmentId || equipmentList[0]?.id || '');
   const [selectedAssetUnitId, setSelectedAssetUnitId] = useState<string>('');
@@ -77,6 +77,9 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   // Check availability for selected asset or bulk
   const availabilityCheck = useMemo(() => {
     if (!selectedEquipment) return { isAvailable: false, message: 'Select equipment' };
+    if (!isValidDateRange(startDate, endDate)) {
+      return { isAvailable: false, message: 'Choose a valid pickup date and a later return date.' };
+    }
 
     const interval = { start: startDate, end: endDate };
 
@@ -172,6 +175,11 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidDateRange(startDate, endDate)) {
+      setDateRangeError('Return date must be after pickup date.');
+      return;
+    }
+    setDateRangeError('');
     if (!availabilityCheck.isAvailable) return;
 
     // Pick assigned unit if serialized
@@ -231,8 +239,8 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
         {/* Modal Header */}
         <div className="flex items-start justify-between border-b border-slate-100 pb-3">
           <div>
@@ -249,7 +257,8 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            aria-label="Close new booking dialog"
           >
             <X className="h-5 w-5" />
           </button>
@@ -281,32 +290,37 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           </div>
 
           {/* Dates & Duration Picker */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">
+              <label htmlFor="booking-start-date" className="text-xs font-semibold text-slate-700 block mb-1">
                 Pickup / Dispatch Date *
               </label>
               <input
+                id="booking-start-date"
                 type="date"
                 required
+                min={today}
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => { setStartDate(e.target.value); setDateRangeError(''); }}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 font-medium focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">
+              <label htmlFor="booking-end-date" className="text-xs font-semibold text-slate-700 block mb-1">
                 Estimated Return Date *
               </label>
               <input
+                id="booking-end-date"
                 type="date"
                 required
+                min={startDate ? addCalendarDays(startDate, 1) : addCalendarDays(today, 1)}
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => { setEndDate(e.target.value); setDateRangeError(''); }}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 font-medium focus:border-blue-500"
               />
             </div>
           </div>
+          {dateRangeError && <p role="alert" className="text-xs font-medium text-rose-700">{dateRangeError}</p>}
 
           {/* Equipment Selection */}
           <div className="space-y-2">
@@ -387,12 +401,12 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
 
           {/* Delivery & Logistics Options */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Truck className="h-3.5 w-3.5 text-slate-500" />
                 Transport Logistics
               </span>
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
                 <label className="flex items-center gap-1 cursor-pointer">
                   <input
                     type="radio"
@@ -402,7 +416,7 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
                   />
                   <span>Flatbed Delivery ($200 roundtrip)</span>
                 </label>
-                <label className="flex items-center gap-1 cursor-pointer ml-3">
+                <label className="flex items-center gap-1">
                   <input
                     type="radio"
                     name="transport"
@@ -462,18 +476,18 @@ export const NewBookingModal: React.FC<NewBookingModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!availabilityCheck.isAvailable}
-              className={`rounded-lg px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors ${
+              className={`w-full rounded-lg px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors sm:w-auto ${
                 availabilityCheck.isAvailable
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-slate-300 cursor-not-allowed'

@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794528000000,
+      "tag": "0001_rentflow_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794907539474,
+      "tag": "0002_account_level_billing",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794907539475,
+      "tag": "0003_saas_entitlements_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794907539476,
+      "tag": "0004_reconcile_applied_foundation_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795464746000,
+      "tag": "0005_reconcile_billing_schema_drift",
+      "breakpoints": true
+    }
+  ]
+}

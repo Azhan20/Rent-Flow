@@ -133,12 +133,12 @@ export const CalendarDispatchView: React.FC = () => {
 
       {/* Visual Gantt / Schedule Timeline */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4 text-slate-500" />
             <h2 className="text-sm font-bold text-slate-900">14-Day Fleet Dispatch Horizon</h2>
           </div>
-          <div className="flex items-center gap-3 text-[11px]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
             <span className="flex items-center gap-1 text-slate-600">
               <span className="h-2.5 w-2.5 rounded-sm bg-amber-500"></span> Checked Out
             </span>
@@ -152,7 +152,7 @@ export const CalendarDispatchView: React.FC = () => {
         </div>
 
         {/* Calendar Grid Header */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Dispatch calendar" tabIndex={0}>
           <div className="min-w-[800px]">
             <div className="grid grid-cols-14 gap-1 text-center border-b border-slate-200 pb-2">
               {scheduleDays.map((day) => (
@@ -250,7 +250,7 @@ export const CalendarDispatchView: React.FC = () => {
       {/* Yard Transfer Modal */}
       {transferModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4 text-xs">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 text-xs shadow-xl sm:p-6">
             <div className="border-b border-slate-100 pb-3">
               <span className="font-mono text-xs font-bold text-blue-600 flex items-center gap-1">
                 <ArrowRightLeft className="h-3.5 w-3.5" />

@@ -317,13 +317,13 @@ export const ReportsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {/* Download Fleet Summary PDF Button */}
           <button
             type="button"
             onClick={handleDownloadFleetSummaryPdf}
             disabled={isPdfGenerating}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors shadow-2xs focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
             title="Generate and download full PDF report of fleet health and maintenance"
           >
             <FileDown className="h-3.5 w-3.5" />
@@ -333,7 +333,7 @@ export const ReportsView: React.FC = () => {
           <button
             type="button"
             onClick={handleExportReportCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <Download className="h-3.5 w-3.5 text-slate-500" />
             <span>Export Summary CSV</span>
@@ -342,7 +342,7 @@ export const ReportsView: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 min-[400px]:grid-cols-2 md:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
           <span className="text-xs font-medium text-slate-500">Total Invoiced (Gross)</span>
           <p className="text-2xl font-bold text-slate-900 mt-1">
