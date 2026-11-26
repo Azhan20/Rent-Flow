@@ -109,14 +109,14 @@ export const CustomersView: React.FC = () => {
               className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                     <h3 className="font-bold text-slate-900 text-sm">{cust.name}</h3>
                     {cust.companyName && (
                       <p className="text-xs font-semibold text-blue-600">{cust.companyName}</p>
                     )}
                   </div>
-                  <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                  <span className="shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                     Net 30 Approved
                   </span>
                 </div>
@@ -170,7 +170,7 @@ export const CustomersView: React.FC = () => {
       {/* Customer Account Details Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-lg space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 text-xs shadow-xl sm:p-6">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">{selectedCustomer.name}</h3>
@@ -228,7 +228,7 @@ export const CustomersView: React.FC = () => {
       {/* Add Customer Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="text-lg font-bold text-slate-900">Add Customer Account</h3>
               <p className="text-xs text-slate-500">Create contractor or individual hire record.</p>
@@ -258,7 +258,7 @@ export const CustomersView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <label className="font-semibold text-slate-700 block mb-1">Email *</label>
                   <input

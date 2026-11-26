@@ -114,8 +114,8 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs">
-        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 text-xs shadow-xl sm:p-6">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <div className="rounded-lg bg-blue-50 p-2 text-blue-600">
               <FileSpreadsheet className="h-5 w-5" />
@@ -132,7 +132,8 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            aria-label="Close CSV import dialog"
           >
             <X className="h-4 w-4" />
           </button>
@@ -184,8 +185,8 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
                   )}
                 </div>
 
-                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-                  <table className="w-full text-left text-[11px]">
+                <div className="max-h-48 overflow-auto rounded-lg border border-slate-200" role="region" aria-label="CSV equipment import preview" tabIndex={0}>
+                  <table className="min-w-[600px] w-full text-left text-[11px]">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                       <tr>
                         <th className="p-2">SKU</th>
@@ -213,11 +214,11 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex flex-col gap-2 border-t border-slate-100 pt-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
               >
                 Cancel
               </button>
@@ -225,7 +226,7 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
                 <button
                   type="button"
                   onClick={handleParsePreview}
-                  className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+                  className="w-full rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 sm:w-auto"
                 >
                   Validate CSV
                 </button>
@@ -233,7 +234,7 @@ BLK-SHORING,Trench Shoring Box Steel 8x10ft,Site Safety & Bulk Gear,ProShore 8x1
                 <button
                   type="button"
                   onClick={handleConfirmImport}
-                  className="rounded-lg bg-emerald-600 px-5 py-2 font-semibold text-white hover:bg-emerald-700"
+                  className="w-full rounded-lg bg-emerald-600 px-5 py-2 font-semibold text-white hover:bg-emerald-700 sm:w-auto"
                 >
                   Confirm & Import {previewParsed.length} Assets
                 </button>

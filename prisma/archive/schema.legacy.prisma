@@ -1,0 +1,345 @@
+// RentFlow Prisma Schema
+// Normalized multi-tenant PostgreSQL schema for Equipment Rental Management SaaS
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_OWNER
+  MANAGER
+  STAFF
+  CUSTOMER
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  RESERVED
+  CHECKED_OUT
+  MAINTENANCE
+  RETIRED
+  LOST_DAMAGED
+}
+
+enum BookingStatus {
+  QUOTE
+  REQUEST
+  PENDING_APPROVAL
+  CONFIRMED
+  CHECKED_OUT
+  RETURNED
+  CLOSED
+  CANCELLED
+  OVERDUE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+  REFUNDED
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionTier {
+  STARTER
+  GROWTH
+  BUSINESS
+  ENTERPRISE
+}
+
+model Organization {
+  id              String        @id @default(uuid())
+  name            String
+  slug            String        @unique // e.g. "apex-rentals"
+  logoUrl         String?
+  currency        String        @default("USD")
+  timezone        String        @default("America/New_York")
+  taxRatePercent  Float         @default(8.25)
+  phone           String?
+  email           String?
+  address         String?
+  country         String        @default("US")
+  planTier        SubscriptionTier @default(GROWTH)
+  subscriptionEnd DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  users           Membership[]
+  locations       Location[]
+  categories      Category[]
+  equipment       EquipmentModel[]
+  customers       Customer[]
+  bookings        Booking[]
+  invoices        Invoice[]
+  maintenance     MaintenanceWorkOrder[]
+  storefront      StorefrontConfig?
+  auditLogs       AuditLog[]
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  passwordHash  String
+  fullName      String
+  avatarUrl     String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           Role         @default(STAFF)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+model Location {
+  id             String           @id @default(uuid())
+  organizationId String
+  name           String           // e.g. "North Yard Hub"
+  code           String           // e.g. "NYH-01"
+  address        String
+  phone          String?
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assets         AssetUnit[]
+  bookings       Booking[]
+
+  @@index([organizationId])
+}
+
+model Category {
+  id             String           @id @default(uuid())
+  organizationId String
+  name           String           // e.g. "Earthmoving Equipment"
+  slug           String
+  description    String?
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  equipment      EquipmentModel[]
+
+  @@unique([organizationId, slug])
+}
+
+model EquipmentModel {
+  id                  String          @id @default(uuid())
+  organizationId      String
+  categoryId          String
+  name                String          // e.g. "CAT 305.5 Mini Hydraulic Excavator"
+  sku                 String
+  makeModel           String?
+  description         String?
+  imageUrl            String?
+  isSerialized        Boolean         @default(true) // serialized unit vs bulk quantity
+  totalStock          Int             @default(1)
+  dailyRate           Float
+  weeklyRate          Float
+  monthlyRate         Float
+  securityDeposit     Float           @default(500)
+  replacementValue    Float           @default(45000)
+  maintenanceIntervalHours Int        @default(250)
+  meterUnit           String          @default("hours")
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category            Category        @relation(fields: [categoryId], references: [id])
+  assetUnits          AssetUnit[]
+  bookingItems        BookingItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, categoryId])
+}
+
+model AssetUnit {
+  id                String          @id @default(uuid())
+  equipmentModelId  String
+  locationId        String
+  unitIdentifier    String          // e.g. "EXC-001" or Serial Number
+  serialNumber      String?
+  currentMeterHours Float           @default(0)
+  status            EquipmentStatus @default(AVAILABLE)
+  conditionNote     String?
+  equipmentModel    EquipmentModel  @relation(fields: [equipmentModelId], references: [id], onDelete: Cascade)
+  location          Location        @relation(fields: [locationId], references: [id])
+  bookingItems      BookingItem[]
+  maintenanceOrders MaintenanceWorkOrder[]
+
+  @@index([equipmentModelId])
+  @@index([locationId])
+}
+
+model Customer {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  companyName    String?
+  email          String
+  phone          String
+  billingAddress String?
+  taxId          String?
+  creditLimit    Float        @default(10000)
+  notes          String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bookings       Booking[]
+  invoices       Invoice[]
+
+  @@index([organizationId, email])
+}
+
+model Booking {
+  id             String          @id @default(uuid())
+  organizationId String
+  bookingNumber  String          // e.g. "BK-2026-0089"
+  customerId     String
+  locationId     String
+  startDate      DateTime
+  endDate        DateTime
+  status         BookingStatus   @default(CONFIRMED)
+  subtotal       Float
+  discountAmount Float           @default(0)
+  taxAmount      Float           @default(0)
+  deliveryFee    Float           @default(0)
+  depositAmount  Float           @default(0)
+  totalAmount    Float
+  customerNotes  String?
+  internalNotes  String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  location       Location        @relation(fields: [locationId], references: [id])
+  items          BookingItem[]
+  invoices       Invoice[]
+  inspections    Inspection[]
+
+  @@unique([organizationId, bookingNumber])
+  @@index([organizationId, startDate, endDate])
+}
+
+model BookingItem {
+  id               String         @id @default(uuid())
+  bookingId        String
+  equipmentModelId String
+  assetUnitId      String?
+  quantity         Int            @default(1)
+  rateApplied      Float
+  booking          Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  equipmentModel   EquipmentModel @relation(fields: [equipmentModelId], references: [id])
+  assetUnit        AssetUnit?     @relation(fields: [assetUnitId], references: [id])
+}
+
+model Inspection {
+  id              String       @id @default(uuid())
+  bookingId       String
+  type            String       // "CHECKOUT" or "RETURN"
+  performedBy     String
+  meterReading    Float
+  checklist       Json
+  damageCharge    Float        @default(0)
+  cleaningFee     Float        @default(0)
+  refuelFee       Float        @default(0)
+  notes           String?
+  signatureDataUrl String?
+  createdAt       DateTime     @default(now())
+  booking         Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  organizationId String
+  invoiceNumber  String        // e.g. "INV-2026-0042"
+  bookingId      String?
+  customerId     String
+  status         InvoiceStatus @default(SENT)
+  subtotal       Float
+  taxAmount      Float
+  deliveryFee    Float         @default(0)
+  depositHeld    Float         @default(0)
+  totalDue       Float
+  amountPaid     Float         @default(0)
+  dueDate        DateTime
+  createdAt      DateTime      @default(now())
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  booking        Booking?      @relation(fields: [bookingId], references: [id])
+  payments       Payment[]
+
+  @@unique([organizationId, invoiceNumber])
+}
+
+model Payment {
+  id            String       @id @default(uuid())
+  invoiceId     String
+  amount        Float
+  paymentMethod String       // "CREDIT_CARD", "BANK_TRANSFER", "CASH", "TERMINAL"
+  referenceCode String?
+  createdAt     DateTime     @default(now())
+  invoice       Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceWorkOrder {
+  id             String            @id @default(uuid())
+  organizationId String
+  assetUnitId    String
+  title          String
+  technician     String
+  status         MaintenanceStatus @default(SCHEDULED)
+  scheduledDate  DateTime
+  completedDate  DateTime?
+  costParts      Float             @default(0)
+  costLabor      Float             @default(0)
+  notes          String?
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assetUnit      AssetUnit         @relation(fields: [assetUnitId], references: [id])
+
+  @@index([organizationId])
+}
+
+model StorefrontConfig {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  subdomain      String       @unique
+  storeName      String
+  heroHeading    String
+  heroTagline    String
+  primaryColor   String       @default("#1d4ed8")
+  contactPhone   String
+  contactEmail   String
+  pickupAddress  String
+  isOpenForQuote Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         String       // "BOOKING_CREATED", "STATUS_OVERRIDE", "DEPOSIT_REFUNDED"
+  details        Json?
+  timestamp      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, timestamp])
+}

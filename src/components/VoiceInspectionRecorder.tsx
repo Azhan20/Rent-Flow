@@ -80,12 +80,12 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
         {!isRecording && !isProcessing ? (
           <button
             type="button"
             onClick={startRecording}
-            className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-rose-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-rose-500"
           >
             <Mic className="w-4 h-4" />
             <span>{label}</span>
@@ -94,7 +94,7 @@ export const VoiceInspectionRecorder: React.FC<VoiceInspectionRecorderProps> = (
           <button
             type="button"
             onClick={stopRecording}
-            className="px-3.5 py-2 bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 animate-pulse shadow-md"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-rose-700 px-3.5 py-2 text-xs font-semibold text-white animate-pulse"
           >
             <Square className="w-4 h-4 fill-white" />
             <span>Stop Recording (Listening...)</span>

@@ -160,9 +160,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   ];
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-xl">
       {/* Header */}
-      <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4 bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white">
+      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600 text-white shadow-xs">
             <Sparkles className="h-4 w-4" />
@@ -181,7 +181,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          aria-label="Close RentFlow Copilot"
         >
           <X className="h-4 w-4" />
         </button>
@@ -192,7 +193,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
         <button
           type="button"
           onClick={() => setActiveTab('chat')}
-          className={`flex-1 rounded-lg py-1.5 transition-colors ${
+          className={`min-h-10 flex-1 rounded-lg px-1.5 py-1.5 transition-colors ${
             activeTab === 'chat'
               ? 'bg-white text-purple-700 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900'
@@ -203,7 +204,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
         <button
           type="button"
           onClick={() => setActiveTab('search')}
-          className={`flex-1 rounded-lg py-1.5 transition-colors flex items-center justify-center gap-1 ${
+          className={`flex min-h-10 flex-1 items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 transition-colors ${
             activeTab === 'search'
               ? 'bg-white text-blue-700 shadow-2xs font-bold'
               : 'text-slate-600 hover:text-slate-900'
@@ -272,7 +273,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
           </div>
 
           {/* Chat Input Bar */}
-          <div className="p-3 border-t border-slate-200 bg-white">
+          <div className="border-t border-slate-200 bg-white p-3">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -290,7 +291,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="rounded-xl bg-purple-600 p-2 text-white hover:bg-purple-700 transition-colors disabled:opacity-40"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:opacity-40"
+                aria-label="Send message"
               >
                 <Send className="h-4 w-4" />
               </button>

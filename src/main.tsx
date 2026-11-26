@@ -1,5 +1,6 @@
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import './index.css';
 
 // Google Maps Platform Quota & Auth Error Listener
@@ -22,5 +23,14 @@ console.error = (...args: unknown[]) => {
   }
 };
 
-createRoot(document.getElementById('root')!).render(<App />);
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  createRoot(rootElement).render(
+    <AppErrorBoundary>
+      <App />
+    </AppErrorBoundary>,
+  );
+} else {
+  console.error(JSON.stringify({ area: 'frontend.startup', reason: 'root_element_missing' }));
+}
 

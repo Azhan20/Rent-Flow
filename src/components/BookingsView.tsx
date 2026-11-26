@@ -109,8 +109,8 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
 
       {/* Bookings Table */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600">
+        <div className="overflow-x-auto" role="region" aria-label="Bookings table" tabIndex={0}>
+          <table className="min-w-[900px] w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3">Booking #</th>
@@ -228,7 +228,7 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
       {/* Booking Details Drawer Modal */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl space-y-4 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl sm:p-6">
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">
               <div>
                 <span className="font-mono text-xs font-bold text-blue-600">
@@ -249,7 +249,7 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-3 border border-slate-200">
+              <div className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 min-[400px]:grid-cols-2">
                 <div>
                   <span className="text-[11px] text-slate-400 block">Rental Interval</span>
                   <span className="font-bold text-slate-800">
@@ -260,7 +260,7 @@ export const BookingsView: React.FC<BookingsViewProps> = ({
                   <span className="text-[11px] text-slate-400 block">Booking Status</span>
                   <span className="font-bold text-slate-800">{selectedBooking.status}</span>
                 </div>
-                <div className="col-span-2 pt-1 border-t border-slate-200/60">
+                <div className="pt-1 border-t border-slate-200/60 min-[400px]:col-span-2">
                   <span className="text-[11px] text-slate-400 block">Job Site / Delivery Address</span>
                   <span className="font-medium text-slate-800">
                     {selectedBooking.deliveryAddress || 'Customer Depot Pickup'}

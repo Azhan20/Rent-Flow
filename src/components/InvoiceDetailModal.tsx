@@ -35,13 +35,13 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto print:p-0 print:shadow-none print:max-w-none">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl space-y-5 overflow-y-auto overscroll-contain rounded-xl bg-white p-4 shadow-xl print:max-h-none print:max-w-none print:overflow-visible print:p-0 print:shadow-none sm:p-6">
         {/* Modal Controls (Hidden in Print) */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3 print:hidden">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono text-xs font-bold text-blue-600">
             {invoice.invoiceNumber}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handlePrint}
@@ -68,7 +68,8 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+              aria-label="Close invoice details"
             >
               <X className="h-5 w-5" />
             </button>
@@ -76,9 +77,9 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         </div>
 
         {/* Printable Invoice Document Sheet */}
-        <div className="border border-slate-200 rounded-xl p-6 bg-white space-y-6 shadow-2xs">
+        <div className="space-y-5 rounded-lg border border-slate-200 bg-white p-4 sm:space-y-6 sm:p-6">
           {/* Invoice Header */}
-          <div className="flex items-start justify-between border-b border-slate-200 pb-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
@@ -108,7 +109,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
           </div>
 
           {/* Bill To & Rental Reference */}
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
             <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Billed To
@@ -133,8 +134,8 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
           </div>
 
           {/* Line Items Table */}
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <table className="w-full text-left text-xs">
+          <div className="overflow-x-auto rounded-lg border border-slate-200" role="region" aria-label="Invoice line items" tabIndex={0}>
+            <table className="min-w-[480px] w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[11px]">
                 <tr>
                   <th className="p-3">Description / Equipment Unit</th>

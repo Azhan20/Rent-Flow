@@ -160,8 +160,8 @@ export const FleetMapView: React.FC = () => {
     <div className="space-y-6">
       {/* Google Maps Quota Warning Banner per Guidelines */}
       {quotaExceeded && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm rounded-xl flex items-center justify-between shadow-sm">
-          <span>
+        <div className="flex flex-wrap items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 shadow-sm md:text-sm">
+          <span className="min-w-0 flex-1">
             Google Maps Platform quota reached. If you are the app owner, visit{' '}
             <a
               href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
@@ -173,19 +173,26 @@ export const FleetMapView: React.FC = () => {
             </a>{' '}
             for instructions to update your account.
           </span>
-          <button onClick={() => setQuotaExceeded(false)} className="text-amber-800 font-bold ml-2">✕</button>
+          <button
+            type="button"
+            onClick={() => setQuotaExceeded(false)}
+            className="shrink-0 rounded p-1 font-bold text-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700"
+            aria-label="Dismiss quota warning"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Navigation className="w-5 h-5 text-amber-500" />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h2 className="flex min-w-0 items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
+              <Navigation className="h-5 w-5 shrink-0 text-amber-500" />
               Sample Fleet Map
             </h2>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <span className="flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:border-emerald-800 dark:bg-emerald-950/40">
               <Radio className="w-3 h-3 animate-pulse" />
               Development Demo
             </span>
@@ -216,7 +223,7 @@ export const FleetMapView: React.FC = () => {
       {/* Map Layout & Telematics Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Google Map Container */}
-        <div className="lg:col-span-3 h-[580px] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-md relative bg-slate-900">
+        <div className="relative h-[420px] overflow-hidden rounded-xl border border-slate-200 bg-slate-900 dark:border-slate-700 sm:h-[500px] lg:col-span-3 lg:h-[580px]">
           {apiKey ? (
             <APIProvider apiKey={apiKey}>
               <Map
@@ -324,7 +331,7 @@ export const FleetMapView: React.FC = () => {
           )}
 
           {/* Floating Map Legend */}
-          <div className="absolute bottom-4 left-4 bg-slate-900/90 backdrop-blur-md border border-slate-700/70 p-3 rounded-xl shadow-lg z-10 text-xs text-slate-300">
+          <div className="absolute bottom-2 left-2 z-10 max-w-[calc(100%-1rem)] rounded-lg border border-slate-700/70 bg-slate-900/90 p-2 text-xs text-slate-300 sm:bottom-4 sm:left-4 sm:p-3">
             <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5 tracking-wider">Fleet Status Legend</span>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -348,7 +355,7 @@ export const FleetMapView: React.FC = () => {
         </div>
 
         {/* Fleet Dispatch List */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm flex flex-col h-[580px]">
+        <div className="flex h-[420px] min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:h-[500px] lg:h-[580px]">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700 mb-3">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
               <Truck className="w-4 h-4 text-amber-500" />
@@ -364,16 +371,18 @@ export const FleetMapView: React.FC = () => {
               const color = getStatusColor(unit.status);
               const isSelected = selectedUnit?.id === unit.id;
               return (
-                <div
+                <button
                   key={unit.id}
+                  type="button"
                   onClick={() => setSelectedUnit(unit)}
-                  className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                  aria-pressed={isSelected}
+                  className={`block w-full rounded-xl border p-3 text-left transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
                     isSelected
                       ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-400 dark:border-amber-600 shadow-sm'
                       : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  <span className="mb-1 flex items-center justify-between">
                     <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                       {unit.sku}
                     </span>
@@ -383,16 +392,16 @@ export const FleetMapView: React.FC = () => {
                     >
                       {color.text}
                     </span>
-                  </div>
+                  </span>
 
-                  <h4 className="font-semibold text-xs text-slate-900 dark:text-white line-clamp-1">
+                  <span className="block font-semibold text-xs text-slate-900 dark:text-white line-clamp-1">
                     {unit.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
                     {unit.siteAddress}
-                  </p>
+                  </span>
 
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="mt-2 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[10px] text-slate-500 dark:border-slate-800 dark:text-slate-400">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-400" />
                       {unit.hourMeter} hrs
@@ -404,8 +413,8 @@ export const FleetMapView: React.FC = () => {
                     <span className="text-slate-400 font-mono">
                       {unit.lastPing}
                     </span>
-                  </div>
-                </div>
+                  </span>
+                </button>
               );
             })}
           </div>

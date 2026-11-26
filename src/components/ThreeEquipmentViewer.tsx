@@ -596,16 +596,16 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
   }, [activeModel, explodedFactor, wireframe, autoRotate]);
 
   return (
-    <div className="relative w-full h-[620px] lg:h-[720px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl flex flex-col">
+    <div className="relative flex h-[520px] w-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-950 sm:h-[620px] lg:h-[720px]">
       {/* 3D Canvas Container (Full Bleed) */}
       <div ref={mountRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Top Floating HUD Bar */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl px-4 py-2.5 shadow-lg pointer-events-auto flex items-center gap-3">
+      <div className="pointer-events-none absolute left-2 right-2 top-2 z-10 flex flex-col gap-2 sm:left-4 sm:right-4 sm:top-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-900/90 px-2.5 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
           <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
           <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-white sm:text-sm">
               <Box className="w-4 h-4 text-amber-400" />
               Interactive 3D Machinery Studio
             </h3>
@@ -616,10 +616,10 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
         </div>
 
         {/* Viewport Control Badges */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="pointer-events-auto flex items-center justify-end gap-1.5 sm:gap-2">
           <button
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`p-2 rounded-xl text-xs font-medium border backdrop-blur-md transition-all shadow-md flex items-center gap-1.5 ${
+            className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-colors ${
               autoRotate ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-slate-900/80 text-slate-400 border-slate-700'
             }`}
             title="Toggle turntable auto-rotation"
@@ -630,7 +630,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
 
           <button
             onClick={() => setWireframe(!wireframe)}
-            className={`p-2 rounded-xl text-xs font-medium border backdrop-blur-md transition-all shadow-md flex items-center gap-1.5 ${
+            className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-colors ${
               wireframe ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'bg-slate-900/80 text-slate-400 border-slate-700'
             }`}
             title="Toggle structural wireframe"
@@ -642,7 +642,8 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 backdrop-blur-md transition-all"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/80 text-slate-300 transition-colors hover:bg-slate-800"
+              aria-label="Close 3D machinery viewer"
             >
               ✕
             </button>
@@ -652,7 +653,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
 
       {/* Part Inspection Overlay Badge */}
       {activePart && telematicsData[activePart] && (
-        <div className="absolute top-20 right-4 w-80 bg-slate-900/90 backdrop-blur-xl border border-slate-700 rounded-2xl p-4 shadow-2xl z-10 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="pointer-events-auto absolute left-2 right-2 top-28 z-10 max-h-[35%] overflow-y-auto rounded-xl border border-slate-700 bg-slate-900/95 p-3 animate-in fade-in zoom-in-95 duration-200 sm:left-auto sm:right-4 sm:top-20 sm:max-h-[55%] sm:w-80 sm:p-4">
           <div className="flex items-start justify-between mb-2">
             <div>
               <span className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Sub-assembly Diagnostics</span>
@@ -687,7 +688,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
 
       {/* Voice Note Banner (when recorded) */}
       {transcribedNote && (
-        <div className="absolute top-20 left-4 max-w-md bg-amber-950/80 backdrop-blur-md border border-amber-500/40 rounded-xl p-3 shadow-xl z-10 text-xs text-amber-200 pointer-events-auto">
+        <div className="pointer-events-auto absolute left-2 right-2 top-28 z-10 max-h-[30%] max-w-md overflow-y-auto rounded-lg border border-amber-500/40 bg-amber-950/95 p-3 text-xs text-amber-200 sm:left-4 sm:right-auto sm:top-20">
           <div className="flex items-center gap-2 font-semibold text-amber-400 mb-1">
             <Volume2 className="w-4 h-4" />
             <span>Voice Inspection Log Captured (gemini-3.5-transcribe)</span>
@@ -697,14 +698,14 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
       )}
 
       {/* Collapsible Bottom Control Dock */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-auto">
-        <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-4 transition-all">
-          <div className="flex items-center justify-between mb-3">
+      <div className="pointer-events-auto absolute bottom-2 left-2 right-2 z-20 sm:bottom-4 sm:left-4 sm:right-4">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/95 p-3 transition-all sm:p-4">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             {/* Machinery Selector */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+            <div className="grid min-w-0 grid-cols-1 gap-1 rounded-lg border border-slate-800 bg-slate-950/80 p-1 min-[400px]:grid-cols-3 sm:flex">
               <button
                 onClick={() => { setActiveModel('excavator'); setActivePart(null); }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`min-h-9 rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors sm:px-3 sm:text-xs ${
                   activeModel === 'excavator' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -712,7 +713,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
               </button>
               <button
                 onClick={() => { setActiveModel('boom_lift'); setActivePart(null); }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`min-h-9 rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors sm:px-3 sm:text-xs ${
                   activeModel === 'boom_lift' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -720,7 +721,7 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
               </button>
               <button
                 onClick={() => { setActiveModel('generator'); setActivePart(null); }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`min-h-9 rounded-md px-2 py-1.5 text-[10px] font-semibold transition-colors sm:px-3 sm:text-xs ${
                   activeModel === 'generator' ? 'bg-amber-500 text-slate-950 shadow-md font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -731,7 +732,8 @@ export const ThreeEquipmentViewer: React.FC<ThreeEquipmentViewerProps> = ({
             {/* Collapse toggle */}
             <button
               onClick={() => setIsDockCollapsed(!isDockCollapsed)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+              aria-label={isDockCollapsed ? 'Expand viewer controls' : 'Collapse viewer controls'}
             >
               {isDockCollapsed ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </button>

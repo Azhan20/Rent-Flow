@@ -1,6 +1,6 @@
 # Master AI Build Prompt — RentFlow Equipment Rental SaaS
 
-Copy the prompt below into your preferred AI coding tool. Attach the RentFlow demo project if the tool supports project uploads. Ask the AI to inspect the existing code first and enhance it instead of throwing away the design or workflows.
+Copy the prompt below into your preferred AI coding tool. Attach the current RentFlow project if the tool supports project uploads. Ask the AI to inspect the existing code first and enhance it instead of throwing away the design or workflows.
 
 ---
 
@@ -14,7 +14,7 @@ It is a multi-tenant SaaS: one deployed application serves many rental companies
 
 ## Preferred technology
 
-- Frontend: React + Vite + TypeScript (or preserve JavaScript if extending the supplied demo), Tailwind CSS, accessible component patterns, Lucide icons.
+- Frontend: React + Vite + TypeScript (or preserve JavaScript if extending the supplied application), Tailwind CSS, accessible component patterns, Lucide icons.
 - Backend: Node.js + Express + TypeScript.
 - Database: PostgreSQL.
 - ORM and migrations: Prisma.
@@ -27,7 +27,7 @@ It is a multi-tenant SaaS: one deployed application serves many rental companies
 - Testing: Vitest/Jest for unit tests, API integration tests, and Playwright for important end-to-end flows.
 - Deployment: environment-based configuration, Docker-ready backend, managed PostgreSQL, HTTPS, logging, error monitoring, and automated backups.
 
-If the supplied RentFlow demo project is attached, preserve its visual language, pages, component structure, and useful interactions. Refactor carefully, add tests, and keep the app runnable at each milestone. Do not remove working demo features without an equivalent or better implementation.
+If the existing RentFlow project is attached, preserve its visual language, pages, component structure, and working interactions. Refactor carefully, add tests, and keep the app runnable at each milestone. Do not remove working features without an equivalent or better implementation.
 
 ## Design direction
 
@@ -56,10 +56,10 @@ Use role-based access control with organization membership. A user may belong to
 - Home page with clear value proposition and product screenshots.
 - Feature pages for inventory, availability, bookings, online storefront, invoices, maintenance, and reporting.
 - Industry pages for construction/plant hire, tools, generators, event equipment, and AV/camera rental.
-- Pricing page with feature comparison and monthly/yearly billing toggle.
-- Demo request and free-trial CTAs.
+- Do not display prices or subscription choices until billing is implemented and configured.
+- Account creation CTAs must not imply a trial or paid subscription unless those workflows are implemented and configured.
 - FAQ, contact, terms, privacy, and status/help links.
-- Do not claim testimonials, customer counts, security certifications, or integrations unless real and verified. Use clearly labelled illustrative content during development.
+- Do not claim testimonials, customer counts, security certifications, or integrations unless real and verified. Do not present illustrative content as customer or business records.
 
 ### B. Tenant onboarding and account setup
 - Sign up, verify email, sign in, forgot/reset password, logout, and session expiry.
@@ -217,7 +217,7 @@ Work incrementally. Before coding, provide:
 6. Milestone plan with test strategy.
 
 Then implement in milestones:
-- Milestone 1: auth, organizations, memberships, seed demo tenant, dashboard shell.
+- Milestone 1: authentication, organizations, memberships, and an empty workspace shell. Do not seed business records.
 - Milestone 2: equipment, categories, locations, customers, CSV import/export.
 - Milestone 3: availability, booking engine, calendar, checkout/return.
 - Milestone 4: quotes, invoices, deposits, manual payments, agreements.
@@ -225,7 +225,7 @@ Then implement in milestones:
 - Milestone 6: subscription billing, Super Admin, emails, audit logs.
 - Milestone 7: hardening, security tests, performance, deployment, docs.
 
-At the end of every milestone: run lint, type-check, migrations, unit/integration tests, and production build; report exactly what passed, failed, and remains mocked. Include setup instructions and sample `.env.example`. Seed only fictional demonstration data. Never present mocked payments, emails, authentication, or inventory as live integrations.
+At the end of every milestone: run lint, type-check, migrations, unit/integration tests, and production build; report exactly what passed, failed, and remains unimplemented. Include setup instructions and sample `.env.example`. Use isolated test fixtures only in tests. Never present simulated payments, emails, authentication, or inventory as live integrations.
 
 Do not attempt to build all features in one giant untested code dump. Prioritize a reliable MVP, preserve clean architecture, and clearly separate shipped functionality from roadmap items.
 
